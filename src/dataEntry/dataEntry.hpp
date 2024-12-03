@@ -1,3 +1,5 @@
+#pragma once
+
 #include <iostream>
 #include <string>
 #include <vector>
@@ -5,7 +7,6 @@
 #include "keyGen.hpp"
 #include "record.hpp"
 #include <optional>
-
 
 class DataEntry 
 {
@@ -22,7 +23,7 @@ public:
     DataEntry(const Record& record, uint64_t key);
     const Record& getRecord() const;
     uint64_t getKey() const;
-
+    friend std::ostream &operator << (std::ostream &os, const DataEntry &dataEntry);
     const KeyGen& getKeyGen() const;
 
 };

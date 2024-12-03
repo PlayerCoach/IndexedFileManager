@@ -1,14 +1,11 @@
 #pragma once
+
 #include <iostream>
-#include <cstdlib>
-#include <time.h>
 #include <set>
 #include <algorithm>
 #include <iterator>
 #include <vector>
-#include <climits>
 #include <random>
-#include <optional>
 class Record
 {
 private:

@@ -1,5 +1,7 @@
 #include "dataEntry.hpp"
 
+KeyGen DataEntry::keyGen = KeyGen();
+
 DataEntry::DataEntry()
 {
     this->record = Record("random");
@@ -37,6 +39,12 @@ const Record& DataEntry::getRecord() const
 uint64_t DataEntry::getKey() const
 {
     return this->key;
+}
+
+std::ostream &operator << (std::ostream &os, const DataEntry &dataEntry)
+{
+    os << "Key: " << dataEntry.key<<" | Record: " << dataEntry.record << std::endl;
+    return os;
 }
 
 const KeyGen& DataEntry::getKeyGen() const

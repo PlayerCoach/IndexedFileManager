@@ -1,7 +1,10 @@
+#pragma once
+
 #include <iostream>
 #include <random>
 #include <string>
 #include <unordered_set>
+
 
 class KeyGen
 {

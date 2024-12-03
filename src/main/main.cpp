@@ -4,6 +4,7 @@
 #include "dataEntry.hpp"
 
 int main() {
-    std::cout << "BLOCK_PTR_SIZE: " << BLOCK_PTR_SIZE << std::endl;
+    ConsoleManager consoleManager;
+    consoleManager.getUserInput();
     return 0;
 }

@@ -5,3 +5,5 @@ add_library(ConsoleManagerLib
 target_include_directories(ConsoleManagerLib PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
+
+target_link_libraries(ConsoleManagerLib DataEntryLib)
