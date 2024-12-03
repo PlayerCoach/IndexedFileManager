@@ -1,3 +1,5 @@
 #pragma once
 
-#define PI 3.14159265358979323846
+#include <fstream>
+
+const int BLOCK_PTR_SIZE = sizeof(std::streamoff); // 8 bytes on 64-bit systems
