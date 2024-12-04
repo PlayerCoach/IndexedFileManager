@@ -4,7 +4,8 @@ ConsoleManager::ConsoleManager(){}
 
 void ConsoleManager::getUserInput()
 {
-    this->clearScreen();
+    this->commands.createCommand(Commands::CLEAR)->execute({});
+    this->commands.createCommand(Commands::HELP)->execute({});
     std::string userInput;
     
     while(true)
@@ -28,7 +29,7 @@ void ConsoleManager::parseUserInput(const std::string& input)
     std::string commandName = tokens[0];
     tokens.erase(tokens.begin());
 
-    std::unique_ptr<ICommand> command = this->commands.createCommand(commandName);
+    std::unique_ptr<Command> command = this->commands.createCommand(commandName);
 
     if (command) {
         command->execute(tokens);
@@ -37,13 +38,6 @@ void ConsoleManager::parseUserInput(const std::string& input)
     }
 }
 
-void ConsoleManager::clearScreen()
-{
-    #ifdef _WIN32
-        system("cls");
-    #else
-        system("clear");
-    #endif
-}
+
 
 

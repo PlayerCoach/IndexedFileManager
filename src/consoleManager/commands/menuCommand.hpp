@@ -2,10 +2,12 @@
 #include "ICommand.hpp"
 #include "commands.hpp"
 #include <iostream>
+#include <string>
 
 
-class MenuCommand : public ICommand {
+class MenuCommand : public Command {
 private:
+
     const std::string MENU =
         "\n========================================\n"
         "                MAN\n"
@@ -14,24 +16,31 @@ private:
         "2.) " + Commands::ADD + "\n"
         "3.) " + Commands::CLEAR + "\n"
         "4.) " + Commands::SHOW + "\n"
-        "5.) " + Commands::QUIT +
+        "5.) " + Commands::QUIT + "\n"
+        "To check the flags of a command, type the command name followed by " + Commands::HELP_FLAG + "\n"
+        
         "\n========================================\n";
 
-public:
-    void execute(std::vector<std::string> tokens) override 
-    {
-        if(!tokens.empty())
-        {
-            std::cout << Commands::INVALID_COMMAND << std::endl;
-            return;
-        }
-
-
-        std::cout << MENU << std::endl;
+    std::string getDescription() override {
+        return "Prints the menu";
     }
 
-    void printHelp() override
+    public:
+    MenuCommand() {
+        this->flags = {
+            {Commands::HELP_FLAG, false},
+        };
+    }
+    void execute(std::vector<std::string> tokens) override 
     {
-        return;
+        if(!this->setFlags(tokens)) return;
+
+        if (this->flags[Commands::HELP_FLAG])
+        {
+            this->printHelp();
+            return;
+        }
+        
+        std::cout << MENU << std::endl;
     }
 };

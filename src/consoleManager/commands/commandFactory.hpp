@@ -1,6 +1,8 @@
 #pragma once 
 #include "ICommand.hpp"
 #include "menuCommand.hpp"
+#include "quitCommand.hpp"
+#include "clearCommand.hpp"
 #include "commands.hpp"
 #include <unordered_map>
 #include <functional>
@@ -11,15 +13,16 @@ class CommandFactory
 {
 
     private:
-    std::unordered_map<std::string, std::function<std::unique_ptr<ICommand>()>> commandMap;
+    std::unordered_map<std::string, std::function<std::unique_ptr<Command>()>> commandMap;
 
     public:
         CommandFactory() {
             commandMap[Commands::HELP] = []() { return std::make_unique<MenuCommand>(); };
-            //commandMap["quit"] = []() { return std::make_unique<QuitCommand>(); };
+            commandMap[Commands::QUIT] = []() { return std::make_unique<QuitCommand>(); };
+            commandMap[Commands::CLEAR] = []() { return std::make_unique<ClearCommand>(); };
         }
 
-        std::unique_ptr<ICommand> createCommand(const std::string& commandName) {
+        std::unique_ptr<Command> createCommand(const std::string& commandName) {
             if (commandMap.find(commandName) != commandMap.end()) {
                 return commandMap[commandName]();
             }

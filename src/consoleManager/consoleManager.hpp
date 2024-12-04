@@ -4,6 +4,7 @@
 #include <functional>   
 #include <sstream>
 #include "commandFactory.hpp"
+#include "commands.hpp"
 
 class ConsoleManager
 {
@@ -14,6 +15,5 @@ class ConsoleManager
     ConsoleManager();
     void getUserInput();
     void parseUserInput(const std::string& input);
-    void clearScreen();
 
 };
