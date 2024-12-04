@@ -3,6 +3,7 @@
 #include "menuCommand.hpp"
 #include "quitCommand.hpp"
 #include "clearCommand.hpp"
+#include "addCommand.hpp"
 #include "commands.hpp"
 #include <unordered_map>
 #include <functional>
@@ -20,6 +21,7 @@ class CommandFactory
             commandMap[Commands::HELP] = []() { return std::make_unique<MenuCommand>(); };
             commandMap[Commands::QUIT] = []() { return std::make_unique<QuitCommand>(); };
             commandMap[Commands::CLEAR] = []() { return std::make_unique<ClearCommand>(); };
+            commandMap[Commands::ADD] = []() { return std::make_unique<AddCommand>(); };
         }
 
         std::unique_ptr<Command> createCommand(const std::string& commandName) {

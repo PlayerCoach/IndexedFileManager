@@ -33,7 +33,7 @@ class Command
         return true;
     }
     
-    virtual void checkFlagsConflict() {} // abstract method not every command needs to check flags conflict
+    virtual bool checkFlagsConflict() {return false;} // abstract method not every command needs to check flags conflict
     
     public:
 

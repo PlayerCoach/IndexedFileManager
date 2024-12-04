@@ -10,7 +10,7 @@ void ConsoleManager::getUserInput()
     
     while(true)
     {
-        std::cout << "Enter command: ";
+        std::cout << "> ";
         std::getline(std::cin, userInput);
         this->parseUserInput(userInput);
        
