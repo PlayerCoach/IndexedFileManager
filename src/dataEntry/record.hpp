@@ -30,7 +30,7 @@ public:
     void insert(int32_t value);
     void remove(int32_t value);
     const int32_t getSize() const;
-    const int32_t getSizeInBytes() const;
+    static const int32_t Size();
     friend std::ostream &operator << (std::ostream &os, const Record &record);
 
     static int32_t getMaxRecordCount();

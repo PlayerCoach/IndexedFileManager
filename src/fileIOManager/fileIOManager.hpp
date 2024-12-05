@@ -14,30 +14,31 @@ class FileManager
     int blockSize;
     int indexOfLastBlock;
     std::string fileName;
+
     std::ifstream fileInput;
+    bool isFileInputOpen = false;
+
+    bool isFileOutputOpen = false;
     std::ofstream fileOutput;
     
     public:
-    FileManager();
-    void createFolder(const std::string& folderName);
-    std::string createFile(const std::string& fileName);
-    void deleteFolder(const std::string& folderName);
-    void deleteFile(const std::string& fileName);
+    FileManager() = default;
+    FileManager(std::string fileName, int blockSize);
+  
+    const int numberOfBlocksInFile();
 
-    void openFileForInput(const std::string& fileName);
-    void openFileForOutput(const std::string& fileName);
+    void openFileForInput(); // add error handling if file is open for output
+    void openFileForOutput(); // add error handling if file is open for input
 
-    void closeFileForInput(const std::string& fileName);
-    void closeFileForOutput(const std::string& fileName);
+    void closeFileForInput();
+    void closeFileForOutput();
 
-    std::unique_ptr<char[]> readBlockFromFile(const std::string& fileName, const int& blockIndex, const int& blockSize);
-    void writeBlockToFile(const std::string& fileName, const int& blockIndex, const int& blockSize, const std::unique_ptr<char[]>& blockData);\
+    std::unique_ptr<char[]> readBlockFromFile(int blockIndex);
+    void writeBlockToFile(int blockIndex, char* blockData);
 
-    const int numberOfBlocksInFile(const std::string& fileName, const int& blockSize);
 
-    void setBlockSize(const int& blockSize);
-    std::unique_ptr<char[]> readDataFromLastBlock(const std::string& fileName);
-    void writeDataToLastBlock(const std::string& fileName, const std::unique_ptr<char[]>& blockData, const int& blockSize);
+    std::unique_ptr<char[]> readLastBlock();
+    void updateLastBlockData(char* blockData); // data size ??
 
 
 };

@@ -25,6 +25,7 @@ class DatabaseManager
     const int databasePageSize = 72;
 
     DatabaseManager();
+    void createDatabase();
     DatabaseManager(const DatabaseManager&) = delete;
     DatabaseManager& operator=(const DatabaseManager&) = delete;
 
@@ -32,7 +33,7 @@ class DatabaseManager
     void deleteDatabase(const std::string& databaseName);
 
     void writeDataToDatabase(DataEntry& dataEntry);
-    void readDataBlockFromDatabase(const int& blockIndex);
-    void readAllDataFromDatabase();
+    void readDataFromDatabase(const int& index);
+    std::vector<DataEntry> deserializeDataBlock(char* data);
 
 };

@@ -71,9 +71,9 @@ const int32_t Record::getSize() const
     return static_cast<int32_t>(this->series.size());
 }
 
-const int32_t Record::getSizeInBytes() const
+const int32_t Record::Size()
 {
-    return static_cast<int32_t>(this->MAX_RECORD_COUNT * sizeof(int32_t) + sizeof(int32_t)); // ->Record of const size
+    return static_cast<int32_t>(Record::MAX_RECORD_COUNT * sizeof(int32_t) + sizeof(int32_t)); // ->Record of const size
 }
 
 std::ostream &operator<<(std::ostream &os, const Record &record)
@@ -102,7 +102,7 @@ int32_t Record::getMaxNumberValue()
 
 std::unique_ptr<char[]> Record::serialize() const
 {
-    std::unique_ptr<char[]> data = std::make_unique<char[]>(this->getSizeInBytes());
+    std::unique_ptr<char[]> data = std::make_unique<char[]>(this->Size());
 
     int32_t size = this->getSize();
     std::memcpy(data.get(), &size, sizeof(size));
@@ -116,7 +116,7 @@ std::unique_ptr<char[]> Record::serialize() const
 
     // Zero-padding the remaining space
     const int32_t zero = 0;
-    while (offset < this->getSizeInBytes())
+    while (offset < this->Size())
     {
         std::memcpy(data.get() + offset, &zero, sizeof(zero));
         offset += sizeof(zero);

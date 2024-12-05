@@ -8,7 +8,6 @@ int main() {
 
     //initialize database
     DatabaseManager& databaseManager = DatabaseManager::getInstance();
-
     ConsoleManager consoleManager;
     consoleManager.getUserInput();
     return 0;

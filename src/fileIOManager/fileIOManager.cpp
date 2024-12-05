@@ -1,75 +1,18 @@
 #include "fileIOManager.hpp"
 
-FileManager::FileManager()
+FileManager::FileManager(std::string fileName, int blockSize)
 {
-    blockSize = 72;
-    indexOfLastBlock = -1;
-    fileName = "";
-    fileInput = std::ifstream();
-    fileOutput = std::ofstream();
+    this->fileName = fileName;
+    this->blockSize = blockSize;
+    this->indexOfLastBlock = -1;
+    this->fileInput = std::ifstream();
+    this->fileOutput = std::ofstream();
 }
 
-void FileManager::createFolder(const std::string& folderName)
-{
-    std::filesystem::create_directory(folderName);
-}
-
-std::string FileManager::createFile(const std::string& fileName)
-{
-    std::ofstream file(fileName);
-    file.close();
-    return fileName;
-}
-
-void FileManager::deleteFolder(const std::string& folderName)
-{
-    std::filesystem::remove_all(folderName);
-}
-
-void FileManager::deleteFile(const std::string& fileName)
-{
-    std::filesystem::remove(fileName);
-}
-
-void FileManager::openFileForInput(const std::string& fileName)
-{
-    fileInput.open(fileName, std::ios::in | std::ios::binary);
-}
-
-void FileManager::openFileForOutput(const std::string& fileName)
-{
-    fileOutput.open(fileName, std::ios::out | std::ios::binary);
-}
-
-void FileManager::closeFileForInput(const std::string& fileName)
-{
-    fileInput.close();
-}
-
-void FileManager::closeFileForOutput(const std::string& fileName)
-{
-    fileOutput.close();
-}
-
-
-std::unique_ptr<char[]> FileManager::readBlockFromFile(const std::string& fileName, const int& blockIndex, const int& blockSize)
-{
-    std::unique_ptr<char[]> blockData(new char[blockSize]);
-    fileInput.seekg(blockIndex * blockSize);
-    fileInput.read(blockData.get(), blockSize);
-    return blockData;
-}
-
-void FileManager::writeBlockToFile(const std::string& fileName, const int& blockIndex, const int& blockSize, const std::unique_ptr<char[]>& blockData)
-{
-    fileOutput.seekp(blockIndex * blockSize);
-    fileOutput.write(blockData.get(), blockSize);
-}
-
-const int FileManager::numberOfBlocksInFile(const std::string& fileName, const int& blockSize)
+const int FileManager::numberOfBlocksInFile()
 {
     fileInput.seekg(0, std::ios::end);
-    int fileSize = fileInput.tellg();
+    int fileSize = static_cast<int>(fileInput.tellg());
     if(fileSize == 0)
     {
         return 0;
@@ -78,43 +21,103 @@ const int FileManager::numberOfBlocksInFile(const std::string& fileName, const i
     return fileSize / blockSize;
 }
 
-void FileManager::setBlockSize(const int& blockSize)
+void FileManager::openFileForInput()
 {
-    this->blockSize = blockSize;
+    if(this->isFileOutputOpen)
+        throw std::runtime_error("File is open for output");
+
+    fileInput.open(fileName, std::ios::in | std::ios::binary);
+    this->isFileInputOpen = true;
+
+    if(this->indexOfLastBlock == -1)
+        this->indexOfLastBlock = this->numberOfBlocksInFile();
 }
 
-std::unique_ptr<char[]> FileManager::readDataFromLastBlock(const std::string& fileName)
+void FileManager::openFileForOutput()
 {
+    if(this->isFileInputOpen)
+        throw std::runtime_error("File is open for input");
+
+    fileOutput.open(fileName, std::ios::out | std::ios::binary);
+    this->isFileOutputOpen = true;
+
     if(this->indexOfLastBlock == -1)
-    {
-        this->indexOfLastBlock = this->numberOfBlocksInFile(fileName, blockSize);
-    }
-    if(this->indexOfLastBlock != 0)
-    {
-        fileInput.seekg(this->indexOfLastBlock * this->blockSize);
-    }
+        this->indexOfLastBlock = this->numberOfBlocksInFile();
+}
+
+void FileManager::closeFileForInput()
+{
+    fileInput.close();
+    this->isFileInputOpen = false;
+}
+
+void FileManager::closeFileForOutput()
+{
+    fileOutput.close();
+    this->isFileOutputOpen = false;
+}
+
+
+std::unique_ptr<char[]> FileManager::readBlockFromFile(int blockIndex)
+{
+    if(!this->isFileInputOpen)
+        throw std::runtime_error("File is not open for input");
+
+    std::unique_ptr<char[]> blockData(new char[blockSize]);
+    fileInput.seekg(blockIndex * blockSize);
+    fileInput.read(blockData.get(), blockSize);
+    return blockData;
+}
+
+void FileManager::writeBlockToFile(int blockIndex, char* blockData)
+{
+    if(!this->isFileOutputOpen)
+        throw std::runtime_error("File is not open for output");
+
+    fileOutput.seekp(blockIndex * blockSize);
+    fileOutput.write(blockData, blockSize);
+}
+
+
+std::unique_ptr<char[]> FileManager::readLastBlock()
+{
+    if (!this->isFileInputOpen)
+        throw std::runtime_error("File is not open for input");
+
     std::unique_ptr<char[]> blockData(new char[this->blockSize]);
+    memset(blockData.get(), 0, this->blockSize); // Initialize with zeros
+
+    if (this->indexOfLastBlock > 0)
+    {
+        fileInput.seekg((this->indexOfLastBlock) * this->blockSize);
+    }
+    else
+    {
+        // Handle the case where the file is empty
+        fileInput.seekg(0, std::ios::end);
+        if (fileInput.tellg() == 0)
+        {
+            return blockData;  // Return an empty block
+        }
+    }
+
     fileInput.read(blockData.get(), this->blockSize);
     return blockData;
 }
 
-void FileManager::writeDataToLastBlock(const std::string& fileName, const std::unique_ptr<char[]>& blockData, const int& blockSize)
+void FileManager::updateLastBlockData(char *blockData)
 {
-    if(this->indexOfLastBlock == -1)
-    {
-        this->indexOfLastBlock = this->numberOfBlocksInFile(fileName, blockSize);
-    }
-    if(this->blockSize != blockSize)
-    {
-        throw std::runtime_error("Block size mismatch");
-    }
+    if(!this->isFileOutputOpen)
+        throw std::runtime_error("File is not open for output");
+
     if(this->indexOfLastBlock != 0)
     {
         fileOutput.seekp(this->indexOfLastBlock * this->blockSize);
     }
-    fileOutput.write(blockData.get(), blockSize);
-    this->indexOfLastBlock++;
+    fileOutput.write(blockData, this->blockSize);
+    //this->indexOfLastBlock++;
 }
+
 
 
 

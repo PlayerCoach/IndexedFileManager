@@ -86,12 +86,11 @@ class AddCommand : public Command {
 
     void addRandomData(int count)
     {
-        DataEntry* dataEntries = new DataEntry[count];
-        for (int i = 0; i < count; i++)
-        {
-            DataEntry dataEntry;
-            databaseManager.writeDataToDatabase(dataEntry);
-        }
+       DataEntry dataEntry;
+       std::cout  << dataEntry << std::endl;
+       databaseManager.writeDataToDatabase(dataEntry);
+       databaseManager.readDataFromDatabase(0);
+       
     }
 
     void addUserData(int count)

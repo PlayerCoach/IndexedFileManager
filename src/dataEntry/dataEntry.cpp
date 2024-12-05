@@ -54,29 +54,31 @@ const KeyGen& DataEntry::getKeyGen() const
 
 std::unique_ptr<char[]> DataEntry::serialize() const // total 72 bytes for a data entry 
 {
-    size_t totalSize = sizeof(this->key) + this->record.getSizeInBytes();
+    size_t totalSize = sizeof(this->key) + this->record.Size();
     std::unique_ptr<char[]> data = std::make_unique<char[]>(totalSize);
-    memcpy(data.get(), &this->key, sizeof(this->key));
-    size_t offset = sizeof(this->key);
     std::unique_ptr<char[]> recordData = this->record.serialize();
-    memcpy(data.get() + offset, recordData.get(), this->record.getSizeInBytes());
+    memcpy(data.get(), recordData.get(), this->record.Size());
+    size_t offset = this->record.Size();
+    memcpy(data.get() + offset, &this->key, sizeof(this->key));
     return data;
 }
 
 std::optional<DataEntry> DataEntry::deserialize(char* data)
 {
-    uint64_t key;
-    memcpy(&key, data, sizeof(key));
-    size_t offset = sizeof(key);
-    std::optional<Record> record = Record::deserialize(data + offset);
-    if(record)
+    std::optional<Record> record = Record::deserialize(data);
+    if(!record)
     {
-        return DataEntry(record.value(), key, true);
+        return std::nullopt;
     }
-    return std::nullopt;
+
+    uint64_t key;
+    size_t offset = Record::Size();
+    memcpy(&key , data + offset, sizeof(key));
+    
+    return DataEntry(*record, key, true);
 }
 
-const int32_t DataEntry::getSizeInBytes() const
+const int32_t DataEntry::Size()
 {
-    return sizeof(this->key) + this->record.getSizeInBytes();
+    return sizeof(uint64_t) + Record::Size();
 }
