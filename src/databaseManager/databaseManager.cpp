@@ -50,9 +50,11 @@ void DatabaseManager::writeDataToDatabase(DataEntry& dataEntry)
     size_t offset = (dataEntries.size()) * DataEntry::Size();
     std::unique_ptr<char[]> data = dataEntry.serialize();
     memcpy(lastBlock.get() + offset, data.get(), DataEntry::Size());
+    
     databaseFileManager.openFileForOutput();
-    this->databaseFileManager.updateLastBlockData(lastBlock.get());
+    this->databaseFileManager.updateLastBlockData(lastBlock.get(), offset + DataEntry::Size());
     databaseFileManager.closeFileForOutput();
+
     if(offset + DataEntry::Size() >= this->databasePageSize)
     {
         databaseFileManager.IncrementIndexOfLastBlock();

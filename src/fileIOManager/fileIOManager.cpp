@@ -38,7 +38,7 @@ void FileManager::openFileForOutput()
     if(this->isFileInputOpen)
         throw std::runtime_error("File is open for input");
 
-    fileOutput.open(fileName, std::ios::out | std::ios::binary);
+    fileOutput.open(fileName, std::ios::in | std::ios::out | std::ios::binary); // Open for reading and writing
     this->isFileOutputOpen = true;
 
     if(this->indexOfLastBlock == -1)
@@ -90,7 +90,7 @@ std::unique_ptr<char[]> FileManager::readLastBlock()
     // Determine the position of the last block
     if (this->indexOfLastBlock > 0)
     {
-        fileInput.seekg((this->indexOfLastBlock) * this->blockSize); // Correct for 0-based index
+        fileInput.seekg((this->indexOfLastBlock) * this->blockSize);
     }
     else
     {
@@ -116,7 +116,7 @@ std::unique_ptr<char[]> FileManager::readLastBlock()
 }
 
 
-void FileManager::updateLastBlockData(char *blockData)
+void FileManager::updateLastBlockData(char *blockData, size_t actualSize)
 {
     if(!this->isFileOutputOpen)
         throw std::runtime_error("File is not open for output");
@@ -125,7 +125,7 @@ void FileManager::updateLastBlockData(char *blockData)
     {
         fileOutput.seekp(this->indexOfLastBlock * this->blockSize);
     }
-    fileOutput.write(blockData, this->blockSize);
+    fileOutput.write(blockData, actualSize);
 }
 
 
