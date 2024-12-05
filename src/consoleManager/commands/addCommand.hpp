@@ -3,12 +3,16 @@
 #include <iostream>
 #include <unordered_map>
 #include "dataEntry.hpp"
+#include <memory>
+#include "databaseManager.hpp"
+
 
 class AddCommand : public Command {
 
     private :
     const std::string RANDOM_FLAG = "-r";
     const std::string USER_FLAG = "-u";
+    DatabaseManager& databaseManager = DatabaseManager::getInstance();
 
     int count = 0;
 
@@ -82,10 +86,11 @@ class AddCommand : public Command {
 
     void addRandomData(int count)
     {
+        DataEntry* dataEntries = new DataEntry[count];
         for (int i = 0; i < count; i++)
         {
             DataEntry dataEntry;
-            std::cout << dataEntry << std::endl;
+            databaseManager.writeDataToDatabase(dataEntry);
         }
     }
 

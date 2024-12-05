@@ -32,9 +32,10 @@ void KeyGen::insertKey(uint64_t key)
 {
     try
     {
-        if(keys.find(key) == keys.end())
+        if(!keyExists(key))
         {
             keys.insert(key);
+            return;
         }
 
         throw std::invalid_argument("Key already exists");

@@ -6,6 +6,9 @@
 #include <iterator>
 #include <vector>
 #include <random>
+#include <optional>
+#include <memory>
+#include <cstring>
 class Record
 {
 private:
@@ -33,4 +36,7 @@ public:
     static int32_t getMaxRecordCount();
     static int32_t getMinNumberValue();
     static int32_t getMaxNumberValue();
+
+    std::unique_ptr<char[]> serialize() const;
+    static std::optional<Record> deserialize(char* data);
 };
