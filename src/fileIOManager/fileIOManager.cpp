@@ -63,7 +63,7 @@ std::unique_ptr<char[]> FileManager::readBlockFromFile(int blockIndex)
     if(!this->isFileInputOpen)
         throw std::runtime_error("File is not open for input");
 
-    std::unique_ptr<char[]> blockData(new char[blockSize]);
+    std::unique_ptr<char[]> blockData(new char[this->blockSize]);
     fileInput.seekg(blockIndex * blockSize);
     fileInput.read(blockData.get(), blockSize);
     return blockData;
@@ -87,23 +87,34 @@ std::unique_ptr<char[]> FileManager::readLastBlock()
     std::unique_ptr<char[]> blockData(new char[this->blockSize]);
     memset(blockData.get(), 0, this->blockSize); // Initialize with zeros
 
+    // Determine the position of the last block
     if (this->indexOfLastBlock > 0)
     {
-        fileInput.seekg((this->indexOfLastBlock) * this->blockSize);
+        fileInput.seekg((this->indexOfLastBlock) * this->blockSize); // Correct for 0-based index
     }
     else
     {
-        // Handle the case where the file is empty
         fileInput.seekg(0, std::ios::end);
         if (fileInput.tellg() == 0)
         {
-            return blockData;  // Return an empty block
+            return blockData;  // Return an empty block for an empty file
         }
+
+        // If indexOfLastBlock is 0 but the file is not empty, read block 0
+        fileInput.seekg(0);
     }
 
+    // Read the block and verify
     fileInput.read(blockData.get(), this->blockSize);
+    if (fileInput.gcount() == 0)
+    {
+        // If no data was read, return the empty block (could be corrupted or unreadable)
+        memset(blockData.get(), 0, this->blockSize);
+    }
+
     return blockData;
 }
+
 
 void FileManager::updateLastBlockData(char *blockData)
 {
@@ -115,9 +126,13 @@ void FileManager::updateLastBlockData(char *blockData)
         fileOutput.seekp(this->indexOfLastBlock * this->blockSize);
     }
     fileOutput.write(blockData, this->blockSize);
-    //this->indexOfLastBlock++;
 }
 
 
+void FileManager::IncrementIndexOfLastBlock()
+{
+    this->indexOfLastBlock++;
+
+}
 
 

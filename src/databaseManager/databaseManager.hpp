@@ -22,7 +22,7 @@ class DatabaseManager
     std::string databaseFilePath;
     std::string indexFilePath;
 
-    const int databasePageSize = 72;
+    const int databasePageSize = 2 * 72;
 
     DatabaseManager();
     void createDatabase();

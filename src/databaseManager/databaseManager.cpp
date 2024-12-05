@@ -46,20 +46,17 @@ void DatabaseManager::writeDataToDatabase(DataEntry& dataEntry)
     std::unique_ptr<char[]> lastBlock = this->databaseFileManager.readLastBlock();
     databaseFileManager.closeFileForInput();
 
-    if (!lastBlock)
-    {
-        lastBlock = std::make_unique<char[]>(this->databasePageSize); // Allocate a new block
-        memset(lastBlock.get(), 0, this->databasePageSize); // Initialize with zeros if necessary
-    }
-
-
     std::vector<DataEntry> dataEntries = this->deserializeDataBlock(lastBlock.get());
-    size_t offset = (dataEntries.size() - 1) * DataEntry::Size();
+    size_t offset = (dataEntries.size()) * DataEntry::Size();
     std::unique_ptr<char[]> data = dataEntry.serialize();
     memcpy(lastBlock.get() + offset, data.get(), DataEntry::Size());
     databaseFileManager.openFileForOutput();
     this->databaseFileManager.updateLastBlockData(lastBlock.get());
     databaseFileManager.closeFileForOutput();
+    if(offset + DataEntry::Size() >= this->databasePageSize)
+    {
+        databaseFileManager.IncrementIndexOfLastBlock();
+    }
 
 }
 
@@ -69,6 +66,11 @@ void DatabaseManager::readDataFromDatabase(const int& index)
     std::unique_ptr<char[]> blockData = this->databaseFileManager.readBlockFromFile(index);
     databaseFileManager.closeFileForInput();
     std::vector<DataEntry> dataEntries = this->deserializeDataBlock(blockData.get());
+    if(dataEntries.empty())
+    {
+        std::cout << "No data in this block" << std::endl;
+        return;
+    }
     for (auto& dataEntry : dataEntries)
     {
         std::cout << dataEntry << std::endl;

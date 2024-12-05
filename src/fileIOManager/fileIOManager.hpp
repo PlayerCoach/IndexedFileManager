@@ -40,5 +40,8 @@ class FileManager
     std::unique_ptr<char[]> readLastBlock();
     void updateLastBlockData(char* blockData); // data size ??
 
+    void IncrementIndexOfLastBlock();
+    
+
 
 };

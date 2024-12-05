@@ -129,6 +129,11 @@ std::optional<Record> Record::deserialize(char* data)
 {
     int32_t size;
     std::memcpy(&size, data, sizeof(size));
+    
+    if(size <= 0 || size > Record::MAX_RECORD_COUNT)
+    {
+        return std::nullopt;
+    }
 
     std::vector<int32_t> series;
     size_t offset = sizeof(size);
