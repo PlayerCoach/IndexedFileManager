@@ -9,6 +9,7 @@ DatabaseManager& DatabaseManager::getInstance()
 
 DatabaseManager::DatabaseManager()
 {
+    this->lastBlockBuffer = std::make_unique<char[]>(this->databasePageSize);
     this->databaseFilePath = this->databaseFolder + "/" + this->databaseFile;
     this->indexFilePath = this->databaseFolder + "/" + this->indexFile;
     this->databaseFileManager = FileManager(this->databaseFilePath, this->databasePageSize);
@@ -42,18 +43,18 @@ void DatabaseManager::deleteDatabase(const std::string& databaseName)
 
 void DatabaseManager::writeDataToDatabase(DataEntry& dataEntry)
 {
-    databaseFileManager.openFileForInput();
+    databaseFileManager.openFileStream();
     std::unique_ptr<char[]> lastBlock = this->databaseFileManager.readLastBlock();
-    databaseFileManager.closeFileForInput();
+    databaseFileManager.closeFileStream();
 
     std::vector<DataEntry> dataEntries = this->deserializeDataBlock(lastBlock.get());
     size_t offset = (dataEntries.size()) * DataEntry::Size();
     std::unique_ptr<char[]> data = dataEntry.serialize();
     memcpy(lastBlock.get() + offset, data.get(), DataEntry::Size());
     
-    databaseFileManager.openFileForOutput();
+    databaseFileManager.openFileStream();
     this->databaseFileManager.updateLastBlockData(lastBlock.get(), offset + DataEntry::Size());
-    databaseFileManager.closeFileForOutput();
+    databaseFileManager.closeFileStream();
 
     if(offset + DataEntry::Size() >= this->databasePageSize)
     {
@@ -64,9 +65,9 @@ void DatabaseManager::writeDataToDatabase(DataEntry& dataEntry)
 
 void DatabaseManager::readDataFromDatabase(const int& index)
 {
-    databaseFileManager.openFileForInput();
+    databaseFileManager.openFileStream();
     std::unique_ptr<char[]> blockData = this->databaseFileManager.readBlockFromFile(index);
-    databaseFileManager.closeFileForInput();
+    databaseFileManager.closeFileStream();
     std::vector<DataEntry> dataEntries = this->deserializeDataBlock(blockData.get());
     if(dataEntries.empty())
     {

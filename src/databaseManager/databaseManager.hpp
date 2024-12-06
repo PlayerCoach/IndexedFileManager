@@ -23,7 +23,10 @@ class DatabaseManager
     std::string indexFilePath;
 
     const int databasePageSize = 2 * 72;
+    std::unique_ptr<char[]> lastBlockBuffer; // Buffer for the last block size of disk page 
+    bool isLastBlockInBuffer = false;
 
+    
     DatabaseManager();
     void createDatabase();
     DatabaseManager(const DatabaseManager&) = delete;

@@ -15,29 +15,28 @@ class FileManager
     int indexOfLastBlock;
     std::string fileName;
 
-    std::ifstream fileInput;
-    bool isFileInputOpen = false;
+    std::fstream fileStream;
 
-    bool isFileOutputOpen = false;
-    std::ofstream fileOutput;
+    std::unique_ptr<char[]> lastBlockData;
+    size_t lastBlockDataSize;
     
     public:
     FileManager() = default;
     FileManager(std::string fileName, int blockSize);
   
+    void openFileStream();
+    void closeFileStream();
+
     const int numberOfBlocksInFile();
+    void ensureFileIsOpen();
+    bool checkIfFileIsEmpty();
 
-    void openFileForInput(); // add error handling if file is open for output
-    void openFileForOutput(); // add error handling if file is open for input
-
-    void closeFileForInput();
-    void closeFileForOutput();
 
     std::unique_ptr<char[]> readBlockFromFile(int blockIndex);
-    void writeBlockToFile(int blockIndex, char* blockData);
-
-
     std::unique_ptr<char[]> readLastBlock();
+
+
+    void writeBlockToFile(int blockIndex, char* blockData);
     void updateLastBlockData(char* blockData, size_t actualSize); // data size ??
 
     void IncrementIndexOfLastBlock();
