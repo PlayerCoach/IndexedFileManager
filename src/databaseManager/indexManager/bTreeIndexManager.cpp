@@ -32,10 +32,6 @@ void IndexManager::insert(DataEntry dataEntry, uint32_t databaseBlockIndex)
 
     Node nodeToInsert = findLeafNodeForKey(key);
   
-    if(nodeToInsert.getIsFull())
-    {
-        //split node
-    }
     auto position = getInsertPosition(nodeToInsert, key);
     if(position.has_value())
     {
@@ -50,8 +46,40 @@ void IndexManager::insert(DataEntry dataEntry, uint32_t databaseBlockIndex)
     }
     else
     {
-        //split node
+       this->split(dataEntry, nodeToInsert, key, dataBlockPtr);
     }
+    
+}
+
+void IndexManager::split(DataEntry& data, Node& node, uint64_t key, uint32_t dataBlockPtr)
+{
+    if(node.getParentPtr() == -1)
+    {
+        splitRoot(data, node, key, dataBlockPtr);
+    }
+  
+}
+
+void IndexManager::splitRoot(DataEntry& data, Node& node, uint64_t key, uint32_t dataBlockPtr)
+{
+    Node leftNode = createNode(node.getIsLeaf(), this->writeBlockIndex);
+    this->writeBlockIndex++;
+    Node rightNode = createNode(node.getIsLeaf(), this->writeBlockIndex);
+    this->writeBlockIndex++;
+
+    std::pair<uint64_t, uint32_t> newKey = std::make_pair(key, dataBlockPtr);
+    std::vector<std::pair<uint64_t, uint32_t>> keyDataPairsCopy = node.getKeyDataPairs();
+    keyDataPairsCopy.push_back(newKey);
+    //update child pointers later on
+    std::sort(keyDataPairsCopy.begin(), keyDataPairsCopy.end());
+    size_t middle = keyDataPairsCopy.size() / 2;
+    leftNode.setKeyDataPairs(std::vector<std::pair<uint64_t, uint32_t>>(keyDataPairsCopy.begin(), keyDataPairsCopy.begin() + middle));
+    rightNode.setKeyDataPairs(std::vector<std::pair<uint64_t, uint32_t>>(keyDataPairsCopy.begin() + middle, keyDataPairsCopy.end()));
+
+    
+
+
+
     
 }
 

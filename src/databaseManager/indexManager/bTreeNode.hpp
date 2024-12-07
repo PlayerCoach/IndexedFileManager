@@ -5,6 +5,13 @@
 #include <memory>
 #include <optional>
 
+struct BTreeEntry
+{
+    std::optional<uint64_t> key;
+    std::optional<uint32_t> dataBlockPtr;
+    int32_t childPtr; // points to the child node of elements smaller than key
+}
+
 class Node {
 private:
     uint32_t order;
@@ -32,8 +39,9 @@ public:
     void insertChildPtr(uint32_t childPtr, size_t position);
     void updateChildPtrs(size_t position);
 
-    std::vector<std::pair<uint64_t, uint32_t>> getKeyDataPairs() { return keyDataPairs; }
-    std::vector<int32_t> getChildPtrs() { return childPtrs; }
+    std::vector<std::pair<uint64_t, uint32_t>> getKeyDataPairs() const { return keyDataPairs; }
+    void setKeyDataPairs(std::vector<std::pair<uint64_t, uint32_t>> keyDataPairs) { this->keyDataPairs = keyDataPairs; }
+    std::vector<int32_t> getChildPtrs() const { return childPtrs; }
 
     size_t getMaxNumberOfKeys() { return 2 * order; }
     bool getIsLeaf() { return isLeaf; }

@@ -29,5 +29,7 @@ class IndexManager
     Node getNode(uint32_t blockIndex);
     Node createNode(bool isLeaf, uint32_t blockIndex);
     void readBTree();
+    void split(DataEntry& data, Node& node, uint64_t key, uint32_t dataBlockPtr);
+    void splitRoot(DataEntry& data, Node& node, uint64_t key, uint32_t dataBlockPtr);
     //void checkIfCanCompensate(Node& node, uint64_t key, uint32_t dataBlockPtr);
 };
