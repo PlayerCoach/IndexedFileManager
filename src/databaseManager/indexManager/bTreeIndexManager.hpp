@@ -21,4 +21,10 @@ class IndexManager
     public:
     IndexManager() = default;
     IndexManager(std::string indexFilePath);
+
+    void insert(DataEntry dataEntry, uint32_t databaseBlockIndex);
+    std::optional<size_t> getInsertPosition(Node& node, uint64_t key);
+    Node findLeafNodeForKey(uint64_t key);
+    Node getNode(uint32_t blockIndex);
+    //void checkIfCanCompensate(Node& node, uint64_t key, uint32_t dataBlockPtr);
 };
