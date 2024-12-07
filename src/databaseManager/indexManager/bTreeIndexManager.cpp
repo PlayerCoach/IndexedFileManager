@@ -7,13 +7,15 @@ IndexManager::IndexManager(std::string indexFilePath)
 
     if (IndexFileManager.checkIfFileIsEmpty())
     {
-        Node root(treeOrder, 0, true);
-        IndexFileManager.writeBlockToFile(0, root.serialize().get());
+        Node root(treeOrder, 0, -1, true);
+        IndexFileManager.writeBlockToFile(this->writeBlockIndex, root.serialize().get());
+        this->writeBlockIndex++;
+
     }
     else
     {
-        auto rootData = IndexFileManager.readBlockFromFile(0);
-        rootCache = Node::deserialize(rootData.get(), treeOrder).value();
+        throw std::runtime_error("Index file already exists");
+        //do smth later
     }
 }
 
@@ -23,6 +25,21 @@ void IndexManager::insert(DataEntry dataEntry, uint32_t databaseBlockIndex)
     uint32_t dataBlockPtr = databaseBlockIndex;
 
     Node nodeToInsert = findLeafNodeForKey(key);
+
+    if(nodeToInsert.getIsFull())
+    {
+        //split node
+    }
+    auto position = getInsertPosition(nodeToInsert, key);
+    if(position.has_value())
+    {
+        nodeToInsert.insertKey(key, dataBlockPtr, position.value());
+        IndexFileManager.writeBlockToFile(nodeToInsert.getBlockIndex(), nodeToInsert.serialize().get());
+    }
+    else
+    {
+        //split node
+    }
     
 }
 
@@ -47,6 +64,8 @@ Node IndexManager::findLeafNodeForKey(uint64_t key)
     }
     return currentNode;
 }
+
+//maby move it to node class
 std::optional<size_t> IndexManager::getInsertPosition(Node& node, uint64_t key)
 {
     if(node.getIsFull())

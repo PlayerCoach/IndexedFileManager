@@ -7,6 +7,7 @@
 #include "dataEntry.hpp"
 #include <filesystem>
 #include <optional>
+#include "indexManager/bTreeIndexManager.hpp"
 
 class DatabaseManager
 {
@@ -15,6 +16,7 @@ class DatabaseManager
 
     private:
     FileManager databaseFileManager;
+    std::unique_ptr<IndexManager> indexManager;
     const std::string databaseFolder = "database";
     const std::string databaseFile = "database.bin";
     const std::string indexFile = "index.bin";

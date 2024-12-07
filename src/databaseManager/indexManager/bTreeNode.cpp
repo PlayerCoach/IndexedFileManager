@@ -3,6 +3,7 @@
 int Node::size(int order) {
     int size = 0;
     size += sizeof(uint32_t); // parentPtr
+    size += sizeof(uint32_t); // selfPtr
     size += sizeof(bool); // isFull
     size += sizeof(bool); // isLeaf
     size += sizeof(uint32_t); // numberOfKeys
@@ -16,6 +17,10 @@ void Node::insertKey(uint64_t key, uint32_t dataBlockPtr, size_t position) {
     numberOfKeys++;
     if(numberOfKeys == 2 * order) {
         isFull = true;
+    }
+
+    if (!isLeaf) {
+        updateChildPtrs(position);
     }
  
 }
@@ -31,6 +36,8 @@ std::unique_ptr<char[]> Node::serialize() {
     char* ptr = data.get();
 
     // Serialize node metadata
+    memcpy(ptr, &selfPtr, sizeof(uint32_t));
+    ptr += sizeof(uint32_t);
     memcpy(ptr, &parentPtr, sizeof(uint32_t));
     ptr += sizeof(uint32_t);
     memcpy(ptr, &isFull, sizeof(bool));
@@ -72,7 +79,11 @@ std::unique_ptr<char[]> Node::serialize() {
 }
 
 std::optional<Node> Node::deserialize(char* data, uint32_t order) {
+
     char* ptr = data;
+    uint32_t selfPtr = *reinterpret_cast<uint32_t*>(ptr);
+    ptr += sizeof(uint32_t);
+
     uint32_t parentPtr = *reinterpret_cast<uint32_t*>(ptr);
     ptr += sizeof(uint32_t);
     bool isFull = *reinterpret_cast<bool*>(ptr);
@@ -103,5 +114,14 @@ std::optional<Node> Node::deserialize(char* data, uint32_t order) {
         keyDataPairs.push_back({key, dataBlockPtr});
     }
 
-    return Node(order, parentPtr, isLeaf, isFull, numberOfKeys, keyDataPairs, childPtrs);
+    return Node(order,selfPtr, parentPtr, isLeaf, isFull, numberOfKeys, keyDataPairs, childPtrs);
+}
+
+void Node::updateChildPtrs(size_t position) {
+    for (size_t i = 0; i < childPtrs.size(); ++i) {
+        if (childPtrs[i] > position) {
+            childPtrs[i]++;
+        }
+    }
+    childPtrs.insert(childPtrs.begin() + position, position);
 }

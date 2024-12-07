@@ -8,6 +8,7 @@
 class Node {
 private:
     uint32_t order;
+    uint32_t selfPtr;
     uint32_t parentPtr;
     bool isLeaf;
     bool isFull;
@@ -18,24 +19,26 @@ private:
 public:
     Node() = default;
     
-    Node(uint32_t order, uint32_t parentPtr, bool isLeaf)
-        : order(order), parentPtr(parentPtr), isLeaf(isLeaf), isFull(false), numberOfKeys(0) {}
+    Node(uint32_t order, uint32_t selfPtr,  uint32_t parentPtr, bool isLeaf)
+        : order(order), selfPtr(selfPtr), parentPtr(parentPtr), isLeaf(isLeaf), isFull(false), numberOfKeys(0) {}
 
-    Node(uint32_t order, uint32_t parentPtr, bool isLeaf, bool isFull, uint32_t numberOfKeys,
+    Node(uint32_t order, uint32_t selfPtr, uint32_t parentPtr, bool isLeaf, bool isFull, uint32_t numberOfKeys,
             std::vector<std::pair<uint64_t, uint32_t>> keyDataPairs, std::vector<int32_t> childPtrs)
-        : order(order), parentPtr(parentPtr), isLeaf(isLeaf), isFull(isFull), numberOfKeys(numberOfKeys),
+        : order(order), selfPtr(selfPtr), parentPtr(parentPtr), isLeaf(isLeaf), isFull(isFull), numberOfKeys(numberOfKeys),
             keyDataPairs(keyDataPairs), childPtrs(childPtrs) {}
 
     static int size(int order);
 
     void insertKey(uint64_t key, uint32_t dataBlockPtr, size_t position);
     void insertChildPtr(uint32_t childPtr, size_t position);
+    void updateChildPtrs(size_t position);
 
     std::vector<std::pair<uint64_t, uint32_t>> getKeyDataPairs() { return keyDataPairs; }
     std::vector<int32_t> getChildPtrs() { return childPtrs; }
     size_t getMaxNumberOfKeys() { return 2 * order; }
     bool getIsLeaf() { return isLeaf; }
     bool getIsFull() { return isFull; }
+    uint32_t getBlockIndex() { return selfPtr; }
 
 
     std::unique_ptr<char[]> serialize();

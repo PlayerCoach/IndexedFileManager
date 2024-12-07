@@ -14,6 +14,8 @@ DatabaseManager::DatabaseManager()
     this->indexFilePath = this->databaseFolder + "/" + this->indexFile;
     this->databaseFileManager = FileManager(this->databaseFilePath, this->databasePageSize, DataEntry::Size());
     this->createDatabase();
+    this->indexManager = std::make_unique<IndexManager>(this->indexFilePath);
+
 }
 
 void DatabaseManager::createDatabase()

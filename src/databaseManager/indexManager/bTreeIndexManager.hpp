@@ -17,6 +17,7 @@ class IndexManager
     FileManager IndexFileManager;
     const int treeOrder = 3;
     const int indexPageSize = Node::size(treeOrder);
+    uint32_t writeBlockIndex = 0;
 
     public:
     IndexManager() = default;
@@ -26,5 +27,7 @@ class IndexManager
     std::optional<size_t> getInsertPosition(Node& node, uint64_t key);
     Node findLeafNodeForKey(uint64_t key);
     Node getNode(uint32_t blockIndex);
+    Node createNode(bool isLeaf, uint32_t blockIndex);
+    void readBTree();
     //void checkIfCanCompensate(Node& node, uint64_t key, uint32_t dataBlockPtr);
 };
