@@ -40,6 +40,7 @@ public:
     bool getIsFull() { return isFull; }
     uint32_t getBlockIndex() { return selfPtr; }
     int32_t getParentPtr() { return parentPtr; }
+    uint32_t getNumberOfKeys() { return numberOfKeys; }
 
 
     std::unique_ptr<char[]> serialize();

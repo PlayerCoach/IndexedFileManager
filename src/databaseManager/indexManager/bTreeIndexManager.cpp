@@ -31,7 +31,7 @@ void IndexManager::insert(DataEntry dataEntry, uint32_t databaseBlockIndex)
     uint32_t dataBlockPtr = databaseBlockIndex;
 
     Node nodeToInsert = findLeafNodeForKey(key);
-
+  
     if(nodeToInsert.getIsFull())
     {
         //split node
@@ -40,6 +40,10 @@ void IndexManager::insert(DataEntry dataEntry, uint32_t databaseBlockIndex)
     if(position.has_value())
     {
         nodeToInsert.insertKey(key, dataBlockPtr, position.value());
+        if(nodeToInsert.getBlockIndex() == 0)
+        {
+            rootCache = nodeToInsert;
+        }
         IndexFileManager.openFileStream();
         IndexFileManager.writeBlockToFile(nodeToInsert.getBlockIndex(), nodeToInsert.serialize().get());
         IndexFileManager.closeFileStream();
@@ -116,6 +120,7 @@ void IndexManager::readBTree()
     std::cout << "Root is leaf: " << root.getIsLeaf() << std::endl;
     std::cout << "Root is full: " << root.getIsFull() << std::endl;
     std::cout << "ParentPtr: " << root.getParentPtr() << std::endl;
+    std::cout << "NumberOfKeys: " << root.getNumberOfKeys() << std::endl;
     
     for (const auto& pair : root.getKeyDataPairs())
     {
