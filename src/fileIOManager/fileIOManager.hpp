@@ -41,11 +41,11 @@ class FileManager
     void writeBlockToFile(int blockIndex, char* blockData);
     void updateLastBlockData(char* blockData, size_t actualSize); // data size ??
 
-    void writeDataToLastBlockData(char* data);
+    void insertDataEntryToLastBlockData(char* data);
     void flushLastBlockData();
 
     void IncrementIndexOfLastBlock();
-
+    uint32_t getIndexOfLastBlock() { return indexOfLastBlock; }
     
 
 

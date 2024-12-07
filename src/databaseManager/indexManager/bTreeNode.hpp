@@ -9,7 +9,7 @@ class Node {
 private:
     uint32_t order;
     uint32_t selfPtr;
-    uint32_t parentPtr;
+    int32_t parentPtr;
     bool isLeaf;
     bool isFull;
     uint32_t numberOfKeys;
@@ -19,8 +19,7 @@ private:
 public:
     Node() = default;
     
-    Node(uint32_t order, uint32_t selfPtr,  uint32_t parentPtr, bool isLeaf)
-        : order(order), selfPtr(selfPtr), parentPtr(parentPtr), isLeaf(isLeaf), isFull(false), numberOfKeys(0) {}
+    Node(uint32_t order, uint32_t selfPtr,  uint32_t parentPtr, bool isLeaf);
 
     Node(uint32_t order, uint32_t selfPtr, uint32_t parentPtr, bool isLeaf, bool isFull, uint32_t numberOfKeys,
             std::vector<std::pair<uint64_t, uint32_t>> keyDataPairs, std::vector<int32_t> childPtrs)
@@ -35,10 +34,12 @@ public:
 
     std::vector<std::pair<uint64_t, uint32_t>> getKeyDataPairs() { return keyDataPairs; }
     std::vector<int32_t> getChildPtrs() { return childPtrs; }
+
     size_t getMaxNumberOfKeys() { return 2 * order; }
     bool getIsLeaf() { return isLeaf; }
     bool getIsFull() { return isFull; }
     uint32_t getBlockIndex() { return selfPtr; }
+    int32_t getParentPtr() { return parentPtr; }
 
 
     std::unique_ptr<char[]> serialize();

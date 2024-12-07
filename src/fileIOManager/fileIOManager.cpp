@@ -86,7 +86,7 @@ void FileManager::updateLastBlockData(char* blockData, size_t actualSize)
     fileStream.write(blockData, actualSize);
 }
 
-void FileManager::writeDataToLastBlockData(char* data)
+void FileManager::insertDataEntryToLastBlockData(char* data)
 {
     if(this->blockSize%dataSize != 0)
     {

@@ -89,7 +89,7 @@ class AddCommand : public Command {
        DataEntry dataEntry;
        std::cout  << dataEntry << std::endl;
        databaseManager.writeDataToDatabase(dataEntry);
-       databaseManager.readDataFromDatabase(0);
+       //databaseManager.readDataFromDatabase(0);
        
     }
 

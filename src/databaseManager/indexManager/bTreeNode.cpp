@@ -1,5 +1,10 @@
 #include "bTreeNode.hpp"
 
+Node::Node(uint32_t order, uint32_t selfPtr, uint32_t parentPtr, bool isLeaf)
+    : order(order), selfPtr(selfPtr), parentPtr(parentPtr), isLeaf(isLeaf), isFull(false), numberOfKeys(0) {
+    childPtrs.resize(2 * order + 1, -1);
+    keyDataPairs.resize(2 * order, {static_cast<uint64_t>(-1), static_cast<uint32_t>(-1)});
+}
 int Node::size(int order) {
     int size = 0;
     size += sizeof(uint32_t); // parentPtr
@@ -49,30 +54,16 @@ std::unique_ptr<char[]> Node::serialize() {
 
      // Serialize childPtrs
     for (size_t i = 0; i < 2 * order + 1; ++i) {
-        if (i < childPtrs.size()) {
-            memcpy(ptr, &childPtrs[i], sizeof(int32_t));
-        } else {
-            int32_t invalidChildPtr = -1;
-            memcpy(ptr, &invalidChildPtr, sizeof(uint32_t));
-        }
+        memcpy(ptr, &childPtrs[i], sizeof(int32_t));
         ptr += sizeof(uint32_t);
     }
 
     // Serialize keys and dataBlockPtrs
     for (size_t i = 0; i < 2 * order; ++i) {
-        if (i < keyDataPairs.size()) {
-            memcpy(ptr, &keyDataPairs[i].first, sizeof(uint64_t));
-            ptr += sizeof(uint64_t);
-            memcpy(ptr, &keyDataPairs[i].second, sizeof(uint32_t));
-            ptr += sizeof(uint32_t);
-        } else {
-            uint64_t invalidKey = static_cast<uint64_t>(-1);
-            uint32_t invalidDataPtr = static_cast<uint32_t>(-1);
-            memcpy(ptr, &invalidKey, sizeof(uint64_t));
-            ptr += sizeof(uint64_t);
-            memcpy(ptr, &invalidDataPtr, sizeof(uint32_t));
-            ptr += sizeof(uint32_t);
-        }
+        memcpy(ptr, &keyDataPairs[i].first, sizeof(uint64_t));
+        ptr += sizeof(uint64_t);
+        memcpy(ptr, &keyDataPairs[i].second, sizeof(uint32_t));
+        ptr += sizeof(uint32_t);
     }
 
     return data;
@@ -81,10 +72,10 @@ std::unique_ptr<char[]> Node::serialize() {
 std::optional<Node> Node::deserialize(char* data, uint32_t order) {
 
     char* ptr = data;
-    uint32_t selfPtr = *reinterpret_cast<uint32_t*>(ptr);
+    uint32_t selfPtr = *reinterpret_cast<int32_t*>(ptr);
     ptr += sizeof(uint32_t);
 
-    uint32_t parentPtr = *reinterpret_cast<uint32_t*>(ptr);
+    uint32_t parentPtr = *reinterpret_cast<int32_t*>(ptr);
     ptr += sizeof(uint32_t);
     bool isFull = *reinterpret_cast<bool*>(ptr);
     ptr += sizeof(bool);
@@ -98,15 +89,12 @@ std::optional<Node> Node::deserialize(char* data, uint32_t order) {
     for (size_t i = 0; i < 2 * order + 1; ++i) {
         int32_t childPtr = *reinterpret_cast<int32_t*>(ptr);
         ptr += sizeof(int32_t);
-        if (childPtr == -1) {
-            break;
-        }
         childPtrs.push_back(childPtr);
     }
 
     // read order number of keys and dataBlockPtrs
     std::vector<std::pair<uint64_t, uint32_t>> keyDataPairs;
-    for (auto i = 0; i < numberOfKeys; i++) {
+    for (size_t i = 0; i < numberOfKeys; i++) {
         uint64_t key = *reinterpret_cast<uint64_t*>(ptr);
         ptr += sizeof(uint64_t);
         uint32_t dataBlockPtr = *reinterpret_cast<uint32_t*>(ptr);

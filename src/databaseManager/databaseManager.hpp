@@ -40,5 +40,6 @@ class DatabaseManager
     void writeDataToDatabase(DataEntry& dataEntry);
     void readDataFromDatabase(const int& index);
     std::vector<DataEntry> deserializeDataBlock(char* data);
+   
 
 };

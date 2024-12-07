@@ -46,22 +46,10 @@ void DatabaseManager::deleteDatabase(const std::string& databaseName)
 void DatabaseManager::writeDataToDatabase(DataEntry& dataEntry)
 {
     databaseFileManager.openFileStream();
-    std::unique_ptr<char[]> lastBlock = this->databaseFileManager.readLastBlock();
+    databaseFileManager.insertDataEntryToLastBlockData(dataEntry.serialize().get());
     databaseFileManager.closeFileStream();
-
-    std::vector<DataEntry> dataEntries = this->deserializeDataBlock(lastBlock.get());
-    size_t offset = (dataEntries.size()) * DataEntry::Size();
-    std::unique_ptr<char[]> data = dataEntry.serialize();
-    memcpy(lastBlock.get() + offset, data.get(), DataEntry::Size());
-    
-    databaseFileManager.openFileStream();
-    this->databaseFileManager.updateLastBlockData(lastBlock.get(), offset + DataEntry::Size());
-    databaseFileManager.closeFileStream();
-
-    if(offset + DataEntry::Size() >= this->databasePageSize)
-    {
-        databaseFileManager.IncrementIndexOfLastBlock();
-    }
+    indexManager->insert(dataEntry, databaseFileManager.getIndexOfLastBlock()); 
+    indexManager->readBTree();
 
 }
 
