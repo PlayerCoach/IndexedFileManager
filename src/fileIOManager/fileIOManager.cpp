@@ -1,7 +1,7 @@
 #include "fileIOManager.hpp"
 
-FileManager::FileManager(std::string fileName, int blockSize)
-    : fileName(std::move(fileName)), blockSize(blockSize), indexOfLastBlock(-1)
+FileManager::FileManager(std::string fileName, int blockSize, int dataSize)
+    : fileName(std::move(fileName)), blockSize(blockSize), dataSize(dataSize)
 {
     lastBlockData = std::unique_ptr<char[]>(new char[blockSize]);
     fileStream = std::fstream();
@@ -51,6 +51,7 @@ std::unique_ptr<char[]> FileManager::readBlockFromFile(int blockIndex)
     this->ensureFileIsOpen();
 
     std::unique_ptr<char[]> blockData(new char[blockSize]);
+    memset(blockData.get(), 0, blockSize);
     fileStream.seekg(blockIndex * blockSize);
     fileStream.read(blockData.get(), blockSize);
     return blockData;
@@ -83,6 +84,46 @@ void FileManager::updateLastBlockData(char* blockData, size_t actualSize)
     if (indexOfLastBlock != 0)
         fileStream.seekp(indexOfLastBlock * blockSize);
     fileStream.write(blockData, actualSize);
+}
+
+void FileManager::writeDataToLastBlockData(char* data)
+{
+    if(this->blockSize%dataSize != 0)
+    {
+        // possibly trying to write data of wrong size
+        throw std::runtime_error("Data size is not a multiple of block size"); // 
+    }
+
+    if (lastBlockDataSize + dataSize > blockSize)
+    {
+       flushLastBlockData();
+    }
+       
+    memcpy(lastBlockData.get() + lastBlockDataSize, data, dataSize);
+    lastBlockDataSize += dataSize;
+    this->lastBlockDataDirty = true;
+
+}
+
+void FileManager::flushLastBlockData()
+{
+    /*write last block data to file */
+    this->updateLastBlockData(lastBlockData.get(), lastBlockDataSize);
+
+    /* if last block data was full then increment index of last block and set last block data size to 0 */
+    if(lastBlockDataSize >= blockSize)
+    {
+        memset(lastBlockData.get(), 0, blockSize);
+        lastBlockDataSize = 0;
+        this->IncrementIndexOfLastBlock();
+        this->lastBlockDataDirty = false;
+    }
+    /* if last block data was not full then keep it still in RAM for future operations*/
+    else
+    {
+        this->lastBlockDataDirty = true;
+    }
+
 }
 
 

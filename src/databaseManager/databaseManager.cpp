@@ -12,7 +12,7 @@ DatabaseManager::DatabaseManager()
     this->lastBlockBuffer = std::make_unique<char[]>(this->databasePageSize);
     this->databaseFilePath = this->databaseFolder + "/" + this->databaseFile;
     this->indexFilePath = this->databaseFolder + "/" + this->indexFile;
-    this->databaseFileManager = FileManager(this->databaseFilePath, this->databasePageSize);
+    this->databaseFileManager = FileManager(this->databaseFilePath, this->databasePageSize, DataEntry::Size());
     this->createDatabase();
 }
 

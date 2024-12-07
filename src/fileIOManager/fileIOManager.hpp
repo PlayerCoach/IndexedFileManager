@@ -12,17 +12,19 @@ class FileManager
 {   
     private:
     int blockSize;
-    int indexOfLastBlock;
+    int dataSize;
+    int indexOfLastBlock = -1;
     std::string fileName;
 
     std::fstream fileStream;
 
     std::unique_ptr<char[]> lastBlockData;
-    size_t lastBlockDataSize;
+    size_t lastBlockDataSize = 0;
+    bool lastBlockDataDirty = false; // conent of last block is in buffer and possibly not written to file
     
     public:
     FileManager() = default;
-    FileManager(std::string fileName, int blockSize);
+    FileManager(std::string fileName, int blockSize, int dataSize);
   
     void openFileStream();
     void closeFileStream();
@@ -39,7 +41,11 @@ class FileManager
     void writeBlockToFile(int blockIndex, char* blockData);
     void updateLastBlockData(char* blockData, size_t actualSize); // data size ??
 
+    void writeDataToLastBlockData(char* data);
+    void flushLastBlockData();
+
     void IncrementIndexOfLastBlock();
+
     
 
 
