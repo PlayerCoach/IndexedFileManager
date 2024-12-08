@@ -86,10 +86,10 @@ class AddCommand : public Command {
 
     void addRandomData(int count)
     {
-       static uint64_t key = 10;
+       static uint64_t key = 0;
        Record record;
        DataEntry dataEntry(record, key);
-       key--;
+       key++;
        std::cout  << dataEntry << std::endl;
        databaseManager.writeDataToDatabase(dataEntry);
        //databaseManager.readDataFromDatabase(0);
