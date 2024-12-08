@@ -30,3 +30,9 @@ template <typename T>
         ptr += sizeof(T);
         return std::nullopt;
     }
+
+    template <typename T>
+    static int sizeOptional() {
+        return sizeof(bool) + sizeof(T);
+    }
+

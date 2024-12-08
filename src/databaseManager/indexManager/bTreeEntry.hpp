@@ -43,15 +43,15 @@ public:
     static size_t size() 
     {
         size_t size = 0;
-        size += sizeof(uint64_t); // key
-        size += sizeof(uint32_t); // dataBlockPtr
-        size += sizeof(uint32_t); // childPtr
-        size += 3*sizeof(bool); // keyExists, dataBlockPtrExists, childPtrExists
+        
+        size += sizeOptional<uint64_t>();
+        size += sizeOptional<uint32_t>();
+        size += sizeOptional<uint32_t>();
 
         return size;
     }
 
-    std::unique_ptr<char[]> serialize() 
+    std::unique_ptr<char[]> serialize() const 
     {
         size_t entrySize = size();
         std::unique_ptr<char[]> data = std::make_unique<char[]>(entrySize);
