@@ -86,7 +86,10 @@ class AddCommand : public Command {
 
     void addRandomData(int count)
     {
-       DataEntry dataEntry;
+       static uint64_t key = 0;
+       Record record;
+       DataEntry dataEntry(record, key);
+       key++;
        std::cout  << dataEntry << std::endl;
        databaseManager.writeDataToDatabase(dataEntry);
        //databaseManager.readDataFromDatabase(0);
@@ -95,7 +98,17 @@ class AddCommand : public Command {
 
     void addUserData(int count)
     {
-       //this will work someday
+        std::cout<< " Enter Key: ";
+        uint64_t key;
+        std::cin >> key;
+        std::cout << "Enter record: ";
+        std::vector<int32_t> record;
+        int32_t number;
+        std::cin >> number;
+        record.push_back(number);
+        DataEntry dataEntry(Record(record), key);
+        databaseManager.writeDataToDatabase(dataEntry);
+       
     }
 
 };

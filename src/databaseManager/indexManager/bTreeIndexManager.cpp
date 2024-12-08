@@ -103,15 +103,33 @@ Node IndexManager::findLeafNodeForKey(uint64_t key)
     Node currentNode = rootCache;
     while(!currentNode.getIsLeaf())
     {
-        for(size_t i = 0; i < currentNode.getNumberOfKeys(); i++)
+        BTreeEntry prevEntry = currentNode.getEntries().front();
+        if(!prevEntry.getChildPtr().has_value())
         {
-            if(currentNode.getEntries()[i].getKey().value() > key)
-            {
-                currentNode = getNode(currentNode.getEntries()[i].getChildPtr().value());
-                break;
-            }
+            throw std::runtime_error("Node is not leaf, but has no child ptr");
         }
+        // if node is not leaf, then it has to have child ptr
+
+
+        for(auto entry : currentNode.getEntries())
+        {
+           if(entry.getKey().has_value())
+           {
+                if(key < entry.getKey().value())
+                {
+                    if(!prevEntry.getChildPtr().has_value())
+                    {
+                        throw std::runtime_error("Node is not leaf, but has no child ptr");
+                    }
+                    currentNode = getNode(prevEntry.getChildPtr().value());
+                    break;
+                }
+           }
+              prevEntry = entry;
+        }
+        currentNode = getNode(prevEntry.getChildPtr().value());
     }
+    std::cout << "Found leaf node: " << currentNode.getBlockIndex() << std::endl;
     return currentNode;
     
 }

@@ -18,7 +18,7 @@ class IndexManager
     std::string indexFilePath;
     Node rootCache;
     FileManager IndexFileManager;
-    const int treeOrder = 1;
+    const int treeOrder = 2;
     const int indexPageSize = Node::size(treeOrder);
     uint32_t writeBlockIndex = 0;
 
