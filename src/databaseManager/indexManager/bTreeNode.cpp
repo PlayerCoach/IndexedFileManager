@@ -20,6 +20,14 @@ void Node::countKeys()
     {
         if(entry.getKey().has_value()) 
             numberOfKeys++;
+        
+        if(!entry.getKey().has_value() && entry.getChildPtr().has_value()) 
+        {
+            if(entryWithoutKeyExists) 
+                throw std::runtime_error("Entry without key already exists");
+            entryWithoutKeyExists = true;
+        }
+
     }
 }
 
@@ -32,8 +40,8 @@ void Node::clearNode() // maby fix this later
 
 void Node::insertKey(uint64_t key, uint32_t dataBlockPtr) 
 {
-    if(isFull) 
-        throw std::runtime_error("Node is full");
+    // if(isFull)   < -- user should check if node is full
+    //     throw std::runtime_error("Node is full");
 
     auto position = std::find_if(entries.begin(), entries.end(), [&](const BTreeEntry& entry) {
         return !entry.getKey() || entry.getKey().value() > key;
@@ -48,15 +56,19 @@ void Node::insertKey(uint64_t key, uint32_t dataBlockPtr)
 
 void Node::insertChildPtr(std::optional<uint32_t> childPtr) 
 {
+    if(this->entryWithoutKeyExists) 
+        throw std::runtime_error("Entry without key already exists");
+
     if(childPtr.has_value()) {
         entries.insert(entries.begin(), BTreeEntry(std::nullopt, std::nullopt, childPtr));
+        this->entryWithoutKeyExists = true;
     }
 }
 
 void Node::insertEntry(const BTreeEntry& entry) 
 {
-    if(this->entries.size() == 2 * order + 1)
-        throw std::runtime_error("Node is full");
+    // if(this->entries.size() == 2 * order + 1) < -- user should check if node is full
+    //     throw std::runtime_error("Node is full");
 
     auto position = std::find_if(entries.begin(), entries.end(), [&](const BTreeEntry& e) {
         return !e.getKey() || e.getKey().value() > entry.getKey().value();
@@ -90,11 +102,6 @@ void Node::setIsLeaf(bool isLeaf)
 void Node::setIsFull(bool isFull) 
 {
     this->isFull = isFull;
-}
-
-void Node::setNumberOfKeys(uint32_t numberOfKeys) 
-{
-    this->numberOfKeys = numberOfKeys;
 }
 
 void Node::setEntryChildPtr(uint64_t key_value, uint32_t childPtr) 
@@ -139,6 +146,34 @@ std::optional<uint32_t> Node::getParentPtr() const
 uint32_t Node::getNumberOfKeys() const 
 {
     return numberOfKeys;
+}
+
+BTreeEntry Node::retrieveMedianKeyEntry() const 
+{
+    if(this->entryWithoutKeyExists)
+        return entries[entries.size() / 2 + 1];
+
+    return entries[entries.size() / 2];
+}
+
+std::pair<std::vector<BTreeEntry>, std::vector<BTreeEntry>> Node::splitNode() 
+{
+    if(!isFull) 
+        throw std::runtime_error("Node is not full");
+
+    size_t middle = entries.size() / 2;
+
+    if(this->entryWithoutKeyExists)
+        size_t middle = entries.size() / 2 + 1;
+   
+
+    std::vector<BTreeEntry> left(entries.begin(), entries.begin() + middle);
+    std::vector<BTreeEntry> right(entries.begin() + middle + 1, entries.end());
+
+
+    this->clearNode(); // clear the node
+
+    return std::make_pair(left, right);
 }
 
 

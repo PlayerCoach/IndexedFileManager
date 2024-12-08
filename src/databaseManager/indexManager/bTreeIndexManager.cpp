@@ -65,49 +65,37 @@ void IndexManager::splitRoot(DataEntry& data, Node& node, uint64_t key, uint32_t
     this->writeBlockIndex++;
     Node rightNode = createNode(node.getIsLeaf(), this->writeBlockIndex);
     this->writeBlockIndex++;
-    BTreeEntry tempEntry(key, dataBlockPtr, std::nullopt);
-    std::vector<BTreeEntry> entries = node.getEntries();
-    entries.push_back(tempEntry);
-    std::sort(entries.begin(), entries.end(), [](const BTreeEntry& a, const BTreeEntry& b) { return a.getKey().value() < b.getKey().value(); });
-    size_t middle = entries.size() / 2;
-    BTreeEntry ascendedNode = entries[middle];
-    leftNode.setEntries(std::vector<BTreeEntry>(entries.begin(), entries.begin() + middle));
-    rightNode.setEntries(std::vector<BTreeEntry>(entries.begin() + middle + 1, entries.end()));
-    //insert the ptr of ascended node to the most left  of the right node
-    rightNode.insertChildPtr(ascendedNode.getDataBlockPtr().value());
-    ascendedNode.setChildPtr(rightNode.getBlockIndex());
 
+    BTreeEntry tempEntry(key, dataBlockPtr, std::nullopt);
+    node.insertEntry(tempEntry);
+
+    BTreeEntry ascendedEntry = node.retrieveMedianKeyEntry();
+
+    std::pair<std::vector<BTreeEntry>, std::vector<BTreeEntry>> splitEntries = node.splitNode(); // split cleans the node
+    leftNode.setEntries(splitEntries.first);
     leftNode.setParentPtr(0);
-    rightNode.setParentPtr(0);
     leftNode.setIsFull(false);
+
+    rightNode.setEntries(splitEntries.second);
+    rightNode.setParentPtr(0);
     rightNode.setIsFull(false);
-    leftNode.setNumberOfKeys(leftNode.getEntries().size());
-    rightNode.setNumberOfKeys(rightNode.getEntries().size());
-    leftNode.setIsLeaf(node.getIsLeaf());
-    rightNode.setIsLeaf(node.getIsLeaf());
+    
+    //insert old ptr of ascended node to the most left  of the right node
+    rightNode.insertChildPtr(ascendedEntry.getChildPtr());
+
+    //insert ptr to right node to the ascended entry
+    ascendedEntry.setChildPtr(rightNode.getBlockIndex());
+    node.insertEntry(ascendedEntry);
+    node.insertChildPtr(leftNode.getBlockIndex());
+    rootCache = node;
+   
+  
     IndexFileManager.openFileStream();
+    IndexFileManager.writeBlockToFile(node.getBlockIndex(), node.serialize().get());
     IndexFileManager.writeBlockToFile(leftNode.getBlockIndex(), leftNode.serialize().get());
     IndexFileManager.writeBlockToFile(rightNode.getBlockIndex(), rightNode.serialize().get());
     IndexFileManager.closeFileStream();
-
-    IndexFileManager.openFileStream();
-    std::unique_ptr<char[]> readNode = IndexFileManager.readBlockFromFile(1);
-    IndexFileManager.closeFileStream();
-    Node deserializedNode = Node::deserialize(readNode.get(), treeOrder).value();
-
-
-    node.clearNode();
-    node.insertChildPtr(leftNode.getBlockIndex()); // this is 2 for some reason should be 1
-    node.insertEntry(ascendedNode);
-    node.setIsLeaf(false);
-    node.setIsFull(false);
-    node.setNumberOfKeys(1);
-    IndexFileManager.openFileStream();
-    IndexFileManager.writeBlockToFile(node.getBlockIndex(), node.serialize().get());
-    IndexFileManager.closeFileStream();
-    rootCache = node;
-    return;
-    
+   
 }
 
 Node IndexManager::findLeafNodeForKey(uint64_t key)

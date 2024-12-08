@@ -78,10 +78,28 @@ public:
 
     friend bool operator<(const BTreeEntry& a, const BTreeEntry& b) 
     {
+        if(!a.getKey().has_value() && !b.getKey().has_value())
+            return false;
+
+        if(!a.getKey().has_value())
+            return true;
+
+        if(!b.getKey().has_value())
+            return false;
+
         return a.getKey().value() < b.getKey().value();
     }
 
     friend bool operator>(const BTreeEntry& a, const BTreeEntry& b) {
+
+        if(!a.getKey().has_value() && !b.getKey().has_value())
+            return false;
+
+        if(!a.getKey().has_value())
+            return false;
+
+        if(!b.getKey().has_value())
+            return true;
 
         return a.getKey().value() > b.getKey().value();
 
@@ -90,7 +108,6 @@ public:
     friend bool operator==(const BTreeEntry& a, const BTreeEntry& b) 
     {
         return a.getKey().value() == b.getKey().value();
-
     }
 
     friend bool operator!=(const BTreeEntry& a, const BTreeEntry& b) 
@@ -101,13 +118,13 @@ public:
 
     friend bool operator<=(const BTreeEntry& a, const BTreeEntry& b) 
     {
-        return a.getKey().value() <= b.getKey().value();
+        return a == b || a < b;
 
     }
 
     friend bool operator>=(const BTreeEntry& a, const BTreeEntry& b) 
     {
-        return a.getKey().value() >= b.getKey().value();
+        return a == b || a > b;
 
     }
 

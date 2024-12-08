@@ -19,6 +19,7 @@ private:
     bool isLeaf;
     bool isFull;
     uint32_t numberOfKeys;
+    bool entryWithoutKeyExists = false;
     std::vector<BTreeEntry> entries;
 
 public:
@@ -41,7 +42,6 @@ public:
     void setParentPtr(std::optional<uint32_t> parentPtr);
     void setIsLeaf(bool isLeaf);
     void setIsFull(bool isFull);
-    void setNumberOfKeys(uint32_t numberOfKeys);
     void setEntryChildPtr(uint64_t key_value, uint32_t childPtr);
 
     std::vector<BTreeEntry> getEntries() const { return entries; }
@@ -51,7 +51,9 @@ public:
     uint32_t getBlockIndex() const ;
     std::optional<uint32_t> getParentPtr() const;
     uint32_t getNumberOfKeys() const;
+    BTreeEntry retrieveMedianKeyEntry() const;
 
+    std::pair<std::vector<BTreeEntry>, std::vector<BTreeEntry>> splitNode();
 
     static int size(int order);
     std::unique_ptr<char[]> serialize() const;
