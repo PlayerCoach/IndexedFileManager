@@ -8,6 +8,8 @@
 #include "fileIOManager.hpp"
 #include "dataEntry.hpp"
 #include "bTreeNode.hpp"
+#include <optional>
+#include "bTreeEntry.hpp"
 
 class IndexManager 
 {

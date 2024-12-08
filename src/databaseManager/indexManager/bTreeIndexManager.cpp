@@ -8,7 +8,7 @@ IndexManager::IndexManager(std::string indexFilePath)
     IndexFileManager.openFileStream();
     if (IndexFileManager.checkIfFileIsEmpty())
     {
-        Node root(treeOrder, 0, -1, true);
+        Node root(treeOrder, 0, std::nullopt, true);
         IndexFileManager.writeBlockToFile(this->writeBlockIndex, root.serialize().get());
         this->writeBlockIndex++;
         rootCache = root;
@@ -31,23 +31,23 @@ void IndexManager::insert(DataEntry dataEntry, uint32_t databaseBlockIndex)
     uint32_t dataBlockPtr = databaseBlockIndex;
 
     Node nodeToInsert = findLeafNodeForKey(key);
-  
-    auto position = getInsertPosition(nodeToInsert, key);
-    if(position.has_value())
+    if(nodeToInsert.getIsFull())
     {
-        nodeToInsert.insertKey(key, dataBlockPtr, position.value());
-        if(nodeToInsert.getBlockIndex() == 0)
-        {
-            rootCache = nodeToInsert;
-        }
-        IndexFileManager.openFileStream();
-        IndexFileManager.writeBlockToFile(nodeToInsert.getBlockIndex(), nodeToInsert.serialize().get());
-        IndexFileManager.closeFileStream();
+        throw std::runtime_error("Node is full, not implemented yet");
+        this->split(dataEntry, nodeToInsert, key, dataBlockPtr);
+        return;
     }
-    else
+
+    
+    nodeToInsert.insertKey(key, dataBlockPtr);
+    if(nodeToInsert.getBlockIndex() == 0)
     {
-       this->split(dataEntry, nodeToInsert, key, dataBlockPtr);
+        rootCache = nodeToInsert;
     }
+    IndexFileManager.openFileStream();
+    IndexFileManager.writeBlockToFile(nodeToInsert.getBlockIndex(), nodeToInsert.serialize().get());
+    IndexFileManager.closeFileStream();
+   
     
 }
 
@@ -66,17 +66,14 @@ void IndexManager::splitRoot(DataEntry& data, Node& node, uint64_t key, uint32_t
     this->writeBlockIndex++;
     Node rightNode = createNode(node.getIsLeaf(), this->writeBlockIndex);
     this->writeBlockIndex++;
+    BTreeEntry tempEntry(key, dataBlockPtr, std::nullopt);
+    std::vector<BTreeEntry> entries = node.getEntries();
+    entries.push_back(tempEntry);
+    std::sort(entries.begin(), entries.end(), [](const BTreeEntry& a, const BTreeEntry& b) { return a.getKey().value() < b.getKey().value(); });
+    size_t middle = entries.size() / 2;
+ 
 
-    std::pair<uint64_t, uint32_t> newKey = std::make_pair(key, dataBlockPtr);
-    std::vector<std::pair<uint64_t, uint32_t>> keyDataPairsCopy = node.getKeyDataPairs();
-    keyDataPairsCopy.push_back(newKey);
-    //update child pointers later on
-    std::sort(keyDataPairsCopy.begin(), keyDataPairsCopy.end());
-    size_t middle = keyDataPairsCopy.size() / 2;
-    leftNode.setKeyDataPairs(std::vector<std::pair<uint64_t, uint32_t>>(keyDataPairsCopy.begin(), keyDataPairsCopy.begin() + middle));
-    rightNode.setKeyDataPairs(std::vector<std::pair<uint64_t, uint32_t>>(keyDataPairsCopy.begin() + middle, keyDataPairsCopy.end()));
 
-    
 
 
 
@@ -86,46 +83,19 @@ void IndexManager::splitRoot(DataEntry& data, Node& node, uint64_t key, uint32_t
 Node IndexManager::findLeafNodeForKey(uint64_t key)
 {
     Node currentNode = rootCache;
-    while (!currentNode.getIsLeaf())
+    while(!currentNode.getIsLeaf())
     {
-        size_t position = 0;
-        for (const auto& pair : currentNode.getKeyDataPairs())
+        for(size_t i = 0; i < currentNode.getNumberOfKeys(); i++)
         {
-            if (key > pair.first)
+            if(currentNode.getEntries()[i].getKey().value() > key)
             {
-                position++;
-            }
-            else
-            {
+                currentNode = getNode(currentNode.getEntries()[i].getChildPtr().value());
                 break;
             }
         }
-        currentNode = getNode(currentNode.getChildPtrs()[position]);
     }
     return currentNode;
-}
-
-//maby move it to node class
-std::optional<size_t> IndexManager::getInsertPosition(Node& node, uint64_t key)
-{
-    if(node.getIsFull())
-    {
-        return std::nullopt;
-    }
-
-    size_t position = 0;
-    for (const auto& pair : node.getKeyDataPairs())
-    {
-        if (key > pair.first)
-        {
-            position++;
-        }
-        else
-        {
-            break;
-        }
-    }
-    return position;
+    
 }
 
 Node IndexManager::getNode(uint32_t blockIndex)
@@ -147,21 +117,19 @@ void IndexManager::readBTree()
     std::cout << "Root: " << root.getBlockIndex() << std::endl;
     std::cout << "Root is leaf: " << root.getIsLeaf() << std::endl;
     std::cout << "Root is full: " << root.getIsFull() << std::endl;
-    std::cout << "ParentPtr: " << root.getParentPtr() << std::endl;
+    if(root.getParentPtr().has_value())
+    {
+        std::cout << "Root parent ptr: " << root.getParentPtr().value() << std::endl;
+    }
+    else
+    {
+        std::cout << "Root has no parent" << std::endl;
+    }
     std::cout << "NumberOfKeys: " << root.getNumberOfKeys() << std::endl;
     
-    for (const auto& pair : root.getKeyDataPairs())
-    {
-        std::cout << "Key: " << pair.first << " DataBlockPtr: " << pair.second << std::endl;
-    }
-
-    for (const auto& childPtr : root.getChildPtrs())
-    {
-        Node child = getNode(childPtr);
-        std::cout << "Child: " << child.getBlockIndex() << std::endl;
-        for (const auto& pair : child.getKeyDataPairs())
-        {
-            std::cout << "Key: " << pair.first << " DataBlockPtr: " << pair.second << std::endl;
-        }
-    }
+   for(size_t i = 0; i < root.getNumberOfKeys(); i++)
+   {
+       std::cout << "Key: " << root.getEntries()[i].getKey().value() << std::endl;
+       std::cout << "DataBlockPtr: " << root.getEntries()[i].getDataBlockPtr().value() << std::endl;
+   }
 }
