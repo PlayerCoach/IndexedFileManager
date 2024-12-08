@@ -33,13 +33,10 @@ void IndexManager::insert(DataEntry dataEntry, uint32_t databaseBlockIndex)
     Node nodeToInsert = findLeafNodeForKey(key);
     if(nodeToInsert.getIsFull())
     {
-        if(checkIfCanCompensate(nodeToInsert, key, dataBlockPtr))
-        {
-            return;
-        }
-
-        this->split(dataEntry, nodeToInsert, key, dataBlockPtr);
-        return;
+        if(!checkIfCanCompensate(nodeToInsert, key, dataBlockPtr))
+            this->split(dataEntry, nodeToInsert, key, dataBlockPtr);
+        
+        return ; // if we split, we dont want to insert again
     }
 
     
@@ -55,13 +52,37 @@ void IndexManager::insert(DataEntry dataEntry, uint32_t databaseBlockIndex)
     
 }
 
-void IndexManager::split(DataEntry& data, Node& node, uint64_t key, uint32_t dataBlockPtr)
+void IndexManager::split(BTreeEntry& data, Node& node, uint64_t key, uint32_t dataBlockPtr)
 {
     if(!node.getParentPtr().has_value())
     {
         splitRoot(data, node, key, dataBlockPtr);
     }
-  
+
+    Node parentNode = getNode(node.getParentPtr().value());
+    Node rightNode = createNode(node.getIsLeaf(), this->writeBlockIndex);
+    // current node will be left node
+    node.insertEntry(BTreeEntry(key, dataBlockPtr, std::nullopt));
+    BTreeEntry ascendedEntry = node.retrieveMedianKeyEntry();
+    std::pair<std::vector<BTreeEntry>, std::vector<BTreeEntry>> splitEntries = node.splitNode(); // split cleans the node
+
+    rightNode.setEntries(splitEntries.second);
+    rightNode.insertChildPtr(ascendedEntry.getChildPtr());
+    rightNode.setParentPtr(parentNode.getBlockIndex());
+    rightNode.setIsFull(false);
+
+    //insert ptr to right node to the ascended entry
+    ascendedEntry.setChildPtr(rightNode.getBlockIndex());
+
+    node.setEntries(splitEntries.first);
+    node.setIsFull(false);
+    IndexFileManager.openFileStream();
+    IndexFileManager.writeBlockToFile(node.getBlockIndex(), node.serialize().get());
+    IndexFileManager.writeBlockToFile(rightNode.getBlockIndex(), rightNode.serialize().get());
+    IndexFileManager.closeFileStream();
+
+    this->insert(ascendedEntry, rightNode.getBlockIndex());
+
 }
 
 void IndexManager::splitRoot(DataEntry& data, Node& node, uint64_t key, uint32_t dataBlockPtr)
@@ -357,7 +378,7 @@ void IndexManager::compensate(Node& node, Node& parentNode, Node& siblingNode, u
             rootCache = parentNode;
         }
 
-        
+
 
 
     }
