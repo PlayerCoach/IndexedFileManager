@@ -6,6 +6,7 @@
 #include <optional>
 #include "bTreeEntry.hpp"
 
+
 class Node {
 private:
     uint32_t order;
@@ -30,7 +31,7 @@ public:
     static int size(int order);
 
     void insertKey(uint64_t key, uint32_t dataBlockPtr);
-    void insertChildPtr(uint32_t childPtr);
+    void insertChildPtr(std::optional<uint32_t> childPtr);
     std::vector<BTreeEntry> getEntries() const { return entries; }
     void setEntries(std::vector<BTreeEntry> entries) { this->entries = entries; }
     void setParentPtr(std::optional<uint32_t> parentPtr) { this->parentPtr = parentPtr; } 

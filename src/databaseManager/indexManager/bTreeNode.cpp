@@ -51,8 +51,10 @@ void Node::clearNode() {
     
 }
 
-void Node::insertChildPtr(uint32_t childPtr) {
-    entries.insert(entries.begin(), BTreeEntry(std::nullopt, std::nullopt, childPtr));
+void Node::insertChildPtr(std::optional<uint32_t> childPtr) {
+    if(childPtr.has_value()) {
+        entries.insert(entries.begin(), BTreeEntry(std::nullopt, std::nullopt, childPtr));
+    }
 }
 
 std::unique_ptr<char[]> Node::serialize() {
@@ -114,7 +116,7 @@ std::optional<Node> Node::deserialize(char* data, uint32_t order) {
     ptr += sizeof(uint32_t);
     bool parentPtrExists = *reinterpret_cast<bool*>(ptr);
     ptr += sizeof(bool);
-    std::optional<uint32_t> parentPtr;
+    std::optional<uint32_t> parentPtr = std::nullopt;
     if (parentPtrExists) {
         parentPtr = *reinterpret_cast<uint32_t*>(ptr);
     }

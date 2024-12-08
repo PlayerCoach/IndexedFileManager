@@ -72,7 +72,7 @@ void IndexManager::splitRoot(DataEntry& data, Node& node, uint64_t key, uint32_t
     size_t middle = entries.size() / 2;
     BTreeEntry ascendedNode = entries[middle];
     leftNode.setEntries(std::vector<BTreeEntry>(entries.begin(), entries.begin() + middle));
-    rightNode.setEntries(std::vector<BTreeEntry>(entries.begin() + middle, entries.end()));
+    rightNode.setEntries(std::vector<BTreeEntry>(entries.begin() + middle + 1, entries.end()));
     //insert the ptr of ascended node to the most left  of the right node
     rightNode.insertChildPtr(ascendedNode.getDataBlockPtr().value());
     ascendedNode.setChildPtr(rightNode.getBlockIndex());
@@ -89,6 +89,12 @@ void IndexManager::splitRoot(DataEntry& data, Node& node, uint64_t key, uint32_t
     IndexFileManager.writeBlockToFile(leftNode.getBlockIndex(), leftNode.serialize().get());
     IndexFileManager.writeBlockToFile(rightNode.getBlockIndex(), rightNode.serialize().get());
     IndexFileManager.closeFileStream();
+
+    IndexFileManager.openFileStream();
+    std::unique_ptr<char[]> readNode = IndexFileManager.readBlockFromFile(1);
+    IndexFileManager.closeFileStream();
+    Node deserializedNode = Node::deserialize(readNode.get(), treeOrder).value();
+
 
     node.clearNode();
     node.insertChildPtr(leftNode.getBlockIndex()); // this is 2 for some reason should be 1
