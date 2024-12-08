@@ -10,6 +10,7 @@
 #include "bTreeNode.hpp"
 #include <optional>
 #include "bTreeEntry.hpp"
+#include <queue>
 
 class IndexManager 
 {
@@ -17,7 +18,7 @@ class IndexManager
     std::string indexFilePath;
     Node rootCache;
     FileManager IndexFileManager;
-    const int treeOrder = 3;
+    const int treeOrder = 1;
     const int indexPageSize = Node::size(treeOrder);
     uint32_t writeBlockIndex = 0;
 
@@ -34,4 +35,5 @@ class IndexManager
     void split(DataEntry& data, Node& node, uint64_t key, uint32_t dataBlockPtr);
     void splitRoot(DataEntry& data, Node& node, uint64_t key, uint32_t dataBlockPtr);
     //void checkIfCanCompensate(Node& node, uint64_t key, uint32_t dataBlockPtr);
+    void readNode(Node& node);
 };

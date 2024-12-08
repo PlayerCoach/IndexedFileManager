@@ -42,19 +42,17 @@ void Node::insertKey(uint64_t key, uint32_t dataBlockPtr) {
         isFull = true;
     }
 
-    // If the node is not a leaf, update child pointers
-    if (!isLeaf) {
-        updateChildPtrs(position);
-    }
-
 }
 
-void Node::insertChildPtr(uint32_t childPtr, size_t position) {
-    entries[position].setChildPtr(childPtr);
-    if (!isLeaf) {
-        updateChildPtrs(position);
-    }
+void Node::clearNode() {
+    entries.clear();
+    isFull = false;
+    numberOfKeys = 0;
+    
+}
 
+void Node::insertChildPtr(uint32_t childPtr) {
+    entries.insert(entries.begin(), BTreeEntry(std::nullopt, std::nullopt, childPtr));
 }
 
 std::unique_ptr<char[]> Node::serialize() {
@@ -146,13 +144,11 @@ std::optional<Node> Node::deserialize(char* data, uint32_t order) {
     return Node(order,selfPtr, parentPtr, isLeaf, isFull, numberOfKeys, entries);
 }
 
-void Node::updateChildPtrs(size_t position) {
-    if (position == 0) {
-        entries[position].setChildPtr(entries[position + 1].getChildPtr().value());
-    } else if (position == numberOfKeys) {
-        entries[position].setChildPtr(entries[position - 1].getChildPtr().value());
-    } else {
-        entries[position].setChildPtr(entries[position + 1].getChildPtr().value());
-        entries[position + 1].setChildPtr(entries[position - 1].getChildPtr().value());
+void Node::insertEntry(const BTreeEntry& entry) {
+    entries.push_back(entry);
+    if(entry.getKey().has_value()) 
+        numberOfKeys++;
+    if (numberOfKeys == 2 * order) {
+        isFull = true;
     }
 }

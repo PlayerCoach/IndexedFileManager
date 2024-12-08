@@ -30,18 +30,22 @@ public:
     static int size(int order);
 
     void insertKey(uint64_t key, uint32_t dataBlockPtr);
-    void insertChildPtr(uint32_t childPtr, size_t position);
-    void updateChildPtrs(size_t position);
-
+    void insertChildPtr(uint32_t childPtr);
     std::vector<BTreeEntry> getEntries() const { return entries; }
     void setEntries(std::vector<BTreeEntry> entries) { this->entries = entries; }
-
+    void setParentPtr(std::optional<uint32_t> parentPtr) { this->parentPtr = parentPtr; } 
+    void setIsLeaf(bool isLeaf) { this->isLeaf = isLeaf; }
+    void setIsFull(bool isFull) { this->isFull = isFull; }
+    void setNumberOfKeys(uint32_t numberOfKeys) { this->numberOfKeys = numberOfKeys; }
+    void setEntryChildPtr(size_t index, uint32_t childPtr) { entries[index].setChildPtr(childPtr); }
+    void insertEntry(const BTreeEntry& entry);
     size_t getMaxNumberOfKeys() { return 2 * order; }
     bool getIsLeaf() { return isLeaf; }
     bool getIsFull() { return isFull; }
     uint32_t getBlockIndex() { return selfPtr; }
     std::optional<int32_t> getParentPtr() { return parentPtr; }
     uint32_t getNumberOfKeys() { return numberOfKeys; }
+    void clearNode();
 
 
     std::unique_ptr<char[]> serialize();
