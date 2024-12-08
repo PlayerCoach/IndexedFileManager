@@ -18,7 +18,7 @@ class IndexManager
     std::string indexFilePath;
     Node rootCache;
     FileManager IndexFileManager;
-    const int treeOrder = 2;
+    const uint32_t treeOrder = 2;
     const int indexPageSize = Node::size(treeOrder);
     uint32_t writeBlockIndex = 0;
 
@@ -34,6 +34,8 @@ class IndexManager
     void readBTree();
     void split(DataEntry& data, Node& node, uint64_t key, uint32_t dataBlockPtr);
     void splitRoot(DataEntry& data, Node& node, uint64_t key, uint32_t dataBlockPtr);
-    //void checkIfCanCompensate(Node& node, uint64_t key, uint32_t dataBlockPtr);
+    bool checkIfCanCompensate(Node& node, const uint64_t key, const uint32_t dataBlockPtr);
+    std::pair<std::optional<Node>,std::optional<Node>> findSiblings(const Node& parentNode, uint32_t blockIndex);
+    void compensate(Node& node, Node& parentNode, Node& siblingNode, uint64_t key, uint32_t dataBlockPtr, bool isLeftSibling);
     void readNode(Node& node);
 };

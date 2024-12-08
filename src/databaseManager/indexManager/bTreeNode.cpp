@@ -67,15 +67,13 @@ void Node::insertChildPtr(std::optional<uint32_t> childPtr)
 
 void Node::insertEntry(const BTreeEntry& entry) 
 {
-    // if(this->entries.size() == 2 * order + 1) < -- user should check if node is full
+    // if(this->entries.size() == 2 * order + 1) <-- user should check if node is full
     //     throw std::runtime_error("Node is full");
 
-    auto position = std::find_if(entries.begin(), entries.end(), [&](const BTreeEntry& e) {
-        return !e.getKey() || e.getKey().value() > entry.getKey().value();
-    });
-
+    auto position = std::lower_bound(entries.begin(), entries.end(), entry);
     entries.insert(position, entry);
-    if(entry.getKey().has_value())
+
+    if (entry.getKey().has_value())
         numberOfKeys++;
 
     if (numberOfKeys == 2 * order) 
@@ -117,10 +115,80 @@ void Node::setEntryChildPtr(uint64_t key_value, uint32_t childPtr)
     }
 }
 
+void Node::deleteEntryAtIndex(size_t index) 
+{
+    if(index >= entries.size()) 
+        throw std::runtime_error("Index out of range");
+
+    if(entries[index].getKey().has_value())
+        numberOfKeys--;
+
+    entries.erase(entries.begin() + index);
+
+    if (numberOfKeys < 2 * order) 
+        isFull = false;
+}
+
+BTreeEntry Node::popLeftMostEntryWithKey() 
+{
+    if(entries.empty()) 
+        throw std::runtime_error("Node is empty");
+
+    BTreeEntry entry = entries.front();
+
+    if(!entry.getKey().has_value())
+    {
+        entry = entries[1];
+        entries.erase(entries.begin() + 1);
+    }
+    else
+        entries.erase(entries.begin());
+        
+    numberOfKeys--;
+
+    if (numberOfKeys < 2 * order) 
+        isFull = false;
+
+    return entry;
+}
+
+BTreeEntry Node::popRightMostEntryWithKey() 
+{
+    if(entries.empty()) 
+        throw std::runtime_error("Node is empty");
+
+    BTreeEntry entry = entries.back();
+    entries.pop_back();
+
+    if(entry.getKey().has_value())
+        numberOfKeys--;
+    else 
+        throw std::runtime_error("Entry without key");
+
+    if (numberOfKeys < 2 * order) 
+        isFull = false;
+
+    return entry;
+}
 
 size_t Node::getMaxNumberOfKeys() const 
 {
     return 2 * order;
+}
+
+std::optional<BTreeEntry> Node::popEntryWithoutKey() 
+{
+    if(!entryWithoutKeyExists) 
+        return std::nullopt;
+
+    BTreeEntry entry = entries.front();
+    if(entry.getKey().has_value()) 
+        return std::nullopt;
+    
+    entries.erase(entries.begin());
+    entryWithoutKeyExists = false;
+
+    return entry;
 }
 
 bool Node::getIsLeaf() const 

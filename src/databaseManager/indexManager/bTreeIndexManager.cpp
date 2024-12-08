@@ -33,6 +33,11 @@ void IndexManager::insert(DataEntry dataEntry, uint32_t databaseBlockIndex)
     Node nodeToInsert = findLeafNodeForKey(key);
     if(nodeToInsert.getIsFull())
     {
+        if(checkIfCanCompensate(nodeToInsert, key, dataBlockPtr))
+        {
+            return;
+        }
+
         this->split(dataEntry, nodeToInsert, key, dataBlockPtr);
         return;
     }
@@ -109,8 +114,6 @@ Node IndexManager::findLeafNodeForKey(uint64_t key)
             throw std::runtime_error("Node is not leaf, but has no child ptr");
         }
         // if node is not leaf, then it has to have child ptr
-
-
         for(auto entry : currentNode.getEntries())
         {
            if(entry.getKey().has_value())
@@ -144,7 +147,7 @@ Node IndexManager::getNode(uint32_t blockIndex)
 
 Node IndexManager::createNode(bool isLeaf, uint32_t blockIndex)
 {
-    return Node(treeOrder, blockIndex, -1, isLeaf);
+    return Node(treeOrder, blockIndex, std::nullopt, isLeaf);
 }
 
 void IndexManager::readBTree()
@@ -168,6 +171,7 @@ void IndexManager::readBTree()
 
 void IndexManager::readNode(Node& node)
 {
+    std::cout<<std::endl<<"_____________________________________________________"<<std::endl;
     std::cout << "Node: " << node.getBlockIndex() << std::endl;
     std::cout << "Node is leaf: " << node.getIsLeaf() << std::endl;
     std::cout << "Node is full: " << node.getIsFull() << std::endl;
@@ -195,4 +199,122 @@ void IndexManager::readNode(Node& node)
        
    }
 
+}
+
+bool IndexManager::checkIfCanCompensate(Node& node, const uint64_t key, const uint32_t dataBlockPtr)
+{
+    if(!node.getParentPtr().has_value())
+    {
+        return false;
+    }
+
+    Node parentNode = getNode(node.getParentPtr().value());
+    size_t index = -1;
+
+    std::pair<std::optional<Node>,std::optional<Node>> siblings = findSiblings(parentNode, node.getBlockIndex());
+    if(siblings.first.has_value())
+    {
+        if(siblings.first.value().getNumberOfKeys() < 2*treeOrder)
+        {
+            bool isLeftSibling = true;
+            compensate(node,parentNode, siblings.first.value(), key, dataBlockPtr, isLeftSibling);
+            return true;
+        }
+    }
+
+    if(siblings.second.has_value())
+    {
+        if(siblings.second.value().getNumberOfKeys() < 2*treeOrder)
+        {
+            bool isLeftSibling = false;
+            compensate(node, parentNode, siblings.second.value(), key, dataBlockPtr, isLeftSibling);
+            return true;
+        }
+    }
+
+    return false;
+ 
+}
+
+std::pair<std::optional<Node>,std::optional<Node>> IndexManager::findSiblings(const Node& parentNode, uint32_t blockIndex)
+{
+    size_t index = -1;
+    for(size_t i = 0; i < parentNode.getEntries().size(); i++)
+    {
+        if(parentNode.getEntries()[i].getChildPtr().value() == blockIndex)
+        {
+            index = i;
+            break;
+        }
+    }
+    if(index == -1)
+    {
+        throw std::runtime_error("Node is not a child of its parent");
+    }
+    if(index == 0)
+    {
+        Node rightSibling = getNode(parentNode.getEntries()[index+1].getChildPtr().value());
+        return std::make_pair(std::nullopt, rightSibling);
+    }
+    else if(index == parentNode.getEntries().size()-1)
+    {
+        Node leftSibling = getNode(parentNode.getEntries()[index-1].getChildPtr().value());
+        return std::make_pair(leftSibling, std::nullopt);
+    }
+    else
+    {
+        Node leftSibling = getNode(parentNode.getEntries()[index-1].getChildPtr().value());
+        Node rightSibling = getNode(parentNode.getEntries()[index+1].getChildPtr().value());
+        return std::make_pair(leftSibling, rightSibling);
+    }
+}
+
+void IndexManager::compensate(Node& node, Node& parentNode, Node& siblingNode, uint64_t key, uint32_t dataBlockPtr, bool isLeftSibling)
+{
+    
+    if(!isLeftSibling)
+    {
+        size_t index = -1;
+        for(size_t i = 0; i < parentNode.getEntries().size(); i++)
+        {
+            if(parentNode.getEntries()[i].getChildPtr().value() == node.getBlockIndex())
+            {
+                index = i;
+                break;
+            }
+        }
+        index++; // its right slibing so i want to rotate with entry that has address of right sibling
+        BTreeEntry currentRootEntry = parentNode.getEntries()[index];
+
+        node.insertEntry(BTreeEntry(key, dataBlockPtr, std::nullopt)); // temporary overflow
+        BTreeEntry entryToAscend = node.popRightMostEntryWithKey(); // this will become new root entry, 
+
+        std::optional<uint32_t> ascendedEntryChildPtr = entryToAscend.getChildPtr();
+        entryToAscend.setChildPtr(currentRootEntry.getChildPtr());
+        parentNode.deleteEntryAtIndex(index); // delete currentRootEntry from parent
+        parentNode.insertEntry(entryToAscend); // insert new root entry to parent
+
+
+        std::optional<BTreeEntry> leftMostPtrOfRightSibling = siblingNode.popEntryWithoutKey();
+        if(leftMostPtrOfRightSibling.has_value())
+            currentRootEntry.setChildPtr(leftMostPtrOfRightSibling.value().getChildPtr());
+        else
+            currentRootEntry.setChildPtr(std::nullopt);
+            
+        siblingNode.insertEntry(currentRootEntry); // insert currentRootEntry to node
+        siblingNode.insertChildPtr(ascendedEntryChildPtr); // insert left most ptr of right sibling to the right sibling
+
+        IndexFileManager.openFileStream();
+        IndexFileManager.writeBlockToFile(node.getBlockIndex(), node.serialize().get());
+        IndexFileManager.writeBlockToFile(parentNode.getBlockIndex(), parentNode.serialize().get());
+        IndexFileManager.writeBlockToFile(siblingNode.getBlockIndex(), siblingNode.serialize().get());
+        IndexFileManager.closeFileStream();
+
+        if(parentNode.getBlockIndex() == 0)
+        {
+            rootCache = parentNode;
+        }
+
+    }
+    
 }

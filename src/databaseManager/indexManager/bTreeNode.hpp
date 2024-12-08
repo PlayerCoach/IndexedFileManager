@@ -44,6 +44,11 @@ public:
     void setIsFull(bool isFull);
     void setEntryChildPtr(uint64_t key_value, uint32_t childPtr);
 
+    void deleteEntryAtIndex(size_t index);
+    BTreeEntry popLeftMostEntryWithKey();
+    BTreeEntry popRightMostEntryWithKey();
+    std::optional<BTreeEntry> popEntryWithoutKey();
+
     std::vector<BTreeEntry> getEntries() const { return entries; }
     size_t getMaxNumberOfKeys() const;
     bool getIsLeaf() const ;
