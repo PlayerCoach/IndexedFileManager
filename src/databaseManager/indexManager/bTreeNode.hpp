@@ -41,7 +41,8 @@ public:
     void setEntries(std::vector<BTreeEntry> entries);
     void setIsLeaf(bool isLeaf);
     void setIsFull(bool isFull);
-    void setEntryChildPtr(uint64_t key_value, uint32_t childPtr);
+    void setEntryChildPtr(uint64_t key_value, std::optional<uint32_t> childPtr);
+    void setSelfPtr(uint32_t selfPtr);
 
     void deleteEntryAtIndex(size_t index);
     void deleteEntryWithKey(uint64_t key);

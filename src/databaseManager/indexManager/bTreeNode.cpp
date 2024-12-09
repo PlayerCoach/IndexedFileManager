@@ -97,17 +97,22 @@ void Node::setIsFull(bool isFull)
     this->isFull = isFull;
 }
 
-void Node::setEntryChildPtr(uint64_t key_value, uint32_t childPtr) 
+void Node::setEntryChildPtr(uint64_t key_value, std::optional<uint32_t> childPtr) 
 {
-    auto entry = std::find_if(entries.begin(), entries.end(), [&](const BTreeEntry& entry) {
-        return entry.getKey().value() == key_value;
-    });
-
-    if(entry != entries.end()) 
+    for(auto& entry : entries) 
     {
-        throw std::runtime_error("Entry not found");
-        //entry->setChildPtr(childPtr);
+        if(entry.getKey().has_value() && entry.getKey().value() == key_value) 
+        {
+            entry.setChildPtr(childPtr);
+            return;
+        }
     }
+
+}
+
+void Node::setSelfPtr(uint32_t selfPtr) 
+{
+    this->selfPtr = selfPtr;
 }
 
 void Node::deleteEntryAtIndex(size_t index) 
@@ -127,20 +132,26 @@ void Node::deleteEntryAtIndex(size_t index)
 void Node::deleteEntryWithKey(uint64_t key) 
 {
     BTreeEntry wrapper = BTreeEntry(key, std::nullopt, std::nullopt); // entries are compared by key
-    auto entry = std::find_if(entries.begin(), entries.end(), [&](const BTreeEntry& entry) {
-        return entry == wrapper;
-    });
+    
+    for(auto entry = entries.begin(); entry != entries.end(); entry++) 
+    {
+        if(*entry == wrapper) 
+        {
+            if(entry->getKey().has_value())
+                numberOfKeys--;
 
-    if(entry == entries.end()) 
-        throw std::runtime_error("Entry not found");
+            entries.erase(entry);
 
-    if(entry->getKey().has_value())
-        numberOfKeys--;
+            if (numberOfKeys < 2 * order) 
+                isFull = false;
 
-    entries.erase(entry);
+            return;
+        }
+    }
 
-    if (numberOfKeys < 2 * order) 
-        isFull = false;
+    throw std::runtime_error("Entry not found");
+
+   
 }
 
 BTreeEntry Node::popLeftMostEntryWithKey() 

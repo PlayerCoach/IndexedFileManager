@@ -307,7 +307,11 @@ std::pair<std::optional<Node>,std::optional<Node>> IndexManager::findSiblings(co
     }
     if(index == 0)
     {
-        Node rightSibling = getNode(parentNode.getEntries()[index+1].getChildPtr().value());
+        while(index < parentNode.getEntries().size() && parentNode.getEntries()[index].getChildPtr().value() == blockIndex)
+        {
+            index++;
+        }
+        Node rightSibling = getNode(parentNode.getEntries()[index].getChildPtr().value());
         return std::make_pair(std::nullopt, rightSibling);
     }
     else if(index == parentNode.getEntries().size()-1)
@@ -557,8 +561,6 @@ void IndexManager::deleteKey(Node& node, uint64_t key)
             this->deleteKey(minElementFromRightSubtree.second.value(), minEntry.getKey().value());
             return;
         }
-
-        throw std::runtime_error("Merge not implemented yet");
     }
     
     return;
@@ -567,6 +569,17 @@ void IndexManager::deleteKey(Node& node, uint64_t key)
 
 void IndexManager::deleteKeyFromLeaf(Node& node, uint64_t key)
 {
+    if(node.getBlockIndex() == 0 )
+    {
+        node.deleteEntryWithKey(key);
+        IndexFileManager.openFileStream();
+        IndexFileManager.writeBlockToFile(node.getBlockIndex(), node.serialize().get());
+        IndexFileManager.closeFileStream();
+        rootCache = node;
+        return;
+
+    }
+    
     if(node.getNumberOfKeys() > treeOrder)
     {
         node.deleteEntryWithKey(key);
@@ -597,14 +610,11 @@ std::pair<std::optional<BTreeEntry>, std::optional<Node>> IndexManager::findMaxE
         currentNode = getNode(currentNode.getEntries().back().getChildPtr().value());
     }
 
-    if(currentNode.getNumberOfKeys() - 1 < treeOrder)
-    {
-        return std::make_pair(std::nullopt, std::nullopt);
-    }
-    BTreeEntry maxEntry = currentNode.popRightMostEntryWithKey();
-    IndexFileManager.openFileStream();
-    IndexFileManager.writeBlockToFile(currentNode.getBlockIndex(), currentNode.serialize().get());
-    IndexFileManager.closeFileStream();
+    // if(currentNode.getNumberOfKeys() - 1 < treeOrder)
+    // {
+    //     return std::make_pair(std::nullopt, std::nullopt);
+    // }
+    BTreeEntry maxEntry = currentNode.getRightMostEntryWithKey();
     return std::make_pair(maxEntry, currentNode);
 }
 
@@ -619,11 +629,6 @@ std::pair<std::optional<BTreeEntry>, std::optional<Node>> IndexManager::findMinE
     while(!currentNode.getIsLeaf())
     {
         currentNode = getNode(currentNode.getEntries()[0].getChildPtr().value());
-    }
-
-    if(currentNode.getNumberOfKeys() - 1 < treeOrder)
-    {
-        return std::make_pair(std::nullopt, std::nullopt);
     }
 
     BTreeEntry minEntry = currentNode.getLeftMostEntryWithKey();
@@ -760,13 +765,14 @@ void IndexManager::merge(Node& node, uint64_t key)
         }
     }
 
-    if(index == 0)
+    if(index == 0) // THIS IS ENTRY WITHOUT KEY
     {
-        // THIS COULD BE ENTRY WITHOUT KEY
+        
         Node rightSibling = getNode(parentNode.getEntries()[index+1].getChildPtr().value());
         std::optional<BTreeEntry> childPtr = rightSibling.popEntryWithoutKey();
         std::vector<BTreeEntry> rightSiblingEntries = rightSibling.getEntries();
-        BTreeEntry entryToDescend = parentNode.getEntries()[index]; // this could be entry without key
+        BTreeEntry entryToDescend = parentNode.getEntries()[index + 1]; // this is entry with key
+        parentNode.setEntryChildPtr(entryToDescend.getKey().value(), std::nullopt);
         if(childPtr.has_value())
             entryToDescend.setChildPtr(childPtr.value().getChildPtr());
         else
@@ -779,27 +785,49 @@ void IndexManager::merge(Node& node, uint64_t key)
         }
         
         this->deleteNode(rightSibling.getBlockIndex());
+        node.deleteEntryWithKey(key);
+
+        if(parentNode.getBlockIndex() == 0 && parentNode.getNumberOfKeys() == 1)
+        {
+            node.setSelfPtr(0);
+            node.setIsLeaf(true);
+            IndexFileManager.openFileStream();
+            IndexFileManager.writeBlockToFile(0, node.serialize().get()); // root is now leaf
+            IndexFileManager.closeFileStream();
+            rootCache = node;
+            return;
+
+
+        }
+
+        if(parentNode.getBlockIndex() == 0)
+        {
+            parentNode.deleteEntryWithKey(entryToDescend.getKey().value());
+            rootCache = parentNode;
+            IndexFileManager.openFileStream();
+            IndexFileManager.writeBlockToFile(node.getBlockIndex(), node.serialize().get());
+            IndexFileManager.writeBlockToFile(parentNode.getBlockIndex(), parentNode.serialize().get());
+            IndexFileManager.closeFileStream();
+            return;
+        }
 
         IndexFileManager.openFileStream();
         IndexFileManager.writeBlockToFile(node.getBlockIndex(), node.serialize().get());
         IndexFileManager.writeBlockToFile(parentNode.getBlockIndex(), parentNode.serialize().get());
         IndexFileManager.closeFileStream();
 
-        if(parentNode.getBlockIndex() == 0)
-        {
-            rootCache = parentNode;
-        }
-
         this->deleteKey(parentNode, entryToDescend.getKey().value());
    
     }
 
-    else if(index == parentNode.getEntries().size()-1)
+    else
     {
         Node leftSibling = getNode(parentNode.getEntries()[index-1].getChildPtr().value());
         std::optional<BTreeEntry> childPtr = node.popEntryWithoutKey();
         std::vector<BTreeEntry> nodeEntries = node.getEntries();
-        BTreeEntry entryToDescend = parentNode.getEntries()[index-1];
+        BTreeEntry entryToDescend = parentNode.getEntries()[index]; // this is entry with key
+        parentNode.setEntryChildPtr(entryToDescend.getKey().value(), std::nullopt);
+
         if(childPtr.has_value())
             entryToDescend.setChildPtr(childPtr.value().getChildPtr());
         else
@@ -810,53 +838,49 @@ void IndexManager::merge(Node& node, uint64_t key)
         {
             leftSibling.insertEntry(entry);
         }
-        parentNode.deleteEntryAtIndex(index-1);
+        
         this->deleteNode(node.getBlockIndex());
+        leftSibling.deleteEntryWithKey(key);
+
+        
+
+        if(parentNode.getBlockIndex() == 0 && parentNode.getNumberOfKeys() == 1)
+        {
+            leftSibling.setSelfPtr(0);
+            leftSibling.setIsLeaf(true);
+            IndexFileManager.openFileStream();
+            IndexFileManager.writeBlockToFile(0, leftSibling.serialize().get()); // root is now leaf
+            IndexFileManager.closeFileStream();
+
+            rootCache = leftSibling;
+            return;
+        }
+
+        if(parentNode.getBlockIndex() == 0)
+        {
+            parentNode.deleteEntryWithKey(entryToDescend.getKey().value());
+            rootCache = parentNode;
+            IndexFileManager.openFileStream();
+            IndexFileManager.writeBlockToFile(leftSibling.getBlockIndex(), leftSibling.serialize().get());
+            IndexFileManager.writeBlockToFile(parentNode.getBlockIndex(), parentNode.serialize().get());
+            IndexFileManager.closeFileStream();
+            return;
+        }
 
         IndexFileManager.openFileStream();
         IndexFileManager.writeBlockToFile(leftSibling.getBlockIndex(), leftSibling.serialize().get());
         IndexFileManager.writeBlockToFile(parentNode.getBlockIndex(), parentNode.serialize().get());
         IndexFileManager.closeFileStream();
 
-        if(parentNode.getBlockIndex() == 0)
-        {
-            rootCache = parentNode;
-        }
+        this->deleteKey(parentNode, entryToDescend.getKey().value());
+
+
 
     }
 
-    else
-    {
-        Node leftSibling = getNode(parentNode.getEntries()[index-1].getChildPtr().value());
-        Node rightSibling = getNode(parentNode.getEntries()[index+1].getChildPtr().value());
-        std::optional<BTreeEntry> childPtr = rightSibling.popEntryWithoutKey();
-        std::vector<BTreeEntry> rightSiblingEntries = rightSibling.getEntries();
-        BTreeEntry entryToDescend = parentNode.getEntries()[index];
-        if(childPtr.has_value())
-            entryToDescend.setChildPtr(childPtr.value().getChildPtr());
-        else
-            entryToDescend.setChildPtr(std::nullopt);
-
-        node.insertEntry(entryToDescend);
-        for(auto entry : rightSiblingEntries)
-        {
-            node.insertEntry(entry);
-        }
-        parentNode.deleteEntryAtIndex(index);
-        this->deleteNode(rightSibling.getBlockIndex());
-
-        IndexFileManager.openFileStream();
-        IndexFileManager.writeBlockToFile(node.getBlockIndex(), node.serialize().get());
-        IndexFileManager.writeBlockToFile(parentNode.getBlockIndex(), parentNode.serialize().get());
-        IndexFileManager.closeFileStream();
-
-        if(parentNode.getBlockIndex() == 0)
-        {
-            rootCache = parentNode;
-        }
-    }
 
 }
+
 
 
 
