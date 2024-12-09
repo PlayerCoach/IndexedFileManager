@@ -72,7 +72,7 @@ void DatabaseManager::readDataFromDatabase(const int& index)
 
 std::string DatabaseManager::deleteRecordFromDatabase(const uint64_t& key)
 {
-    std::string result = this->indexManager->deleteKey(key);
+    std::string result = this->indexManager->deleteKeyPreparation(key);
     this->indexManager->readBTree();
     return result; 
 }

@@ -491,6 +491,7 @@ std::optional<Node> IndexManager::findNodeWithKey(uint64_t key)
 
 }
 
+
 std::string IndexManager::deleteKeyPreparation(uint64_t key)
 {
     std::optional<Node> nodeWithKey = findNodeWithKey(key);
@@ -513,10 +514,10 @@ void IndexManager::deleteKey(Node& node, uint64_t key)
     }
     else
     {
-        std::optional<BTreeEntry> maxElementFromLeftSubtree = findMaxElementFromLeftSubtree(node);
-        if(maxElementFromLeftSubtree.has_value())
+        std::pair<std::optional<BTreeEntry>, std::optional<Node>> maxElementFromLeftSubtree = findMaxElementFromLeftSubtree(node);
+        if(maxElementFromLeftSubtree.first.has_value())
         {
-            BTreeEntry maxEntry = maxElementFromLeftSubtree.value();
+            BTreeEntry maxEntry = maxElementFromLeftSubtree.first.value();
             BTreeEntry entryToDelete = node.getEntryWithKey(key).value();
             node.deleteEntryWithKey(key);
             maxEntry.setChildPtr(entryToDelete.getChildPtr());
@@ -528,13 +529,14 @@ void IndexManager::deleteKey(Node& node, uint64_t key)
             {
                 rootCache = node;
             }
+            this->deleteKey(maxElementFromLeftSubtree.second.value(), maxEntry.getKey().value());
             return;
         }
 
-        std::optional<BTreeEntry> minElementFromRightSubtree = findMinElementFromRightSubtree(node);
-        if(minElementFromRightSubtree.has_value())
+        std::pair<std::optional<BTreeEntry>, std::optional<Node>>  minElementFromRightSubtree = findMinElementFromRightSubtree(node);
+        if(minElementFromRightSubtree.first.has_value())
         {
-            BTreeEntry minEntry = minElementFromRightSubtree.value();
+            BTreeEntry minEntry = minElementFromRightSubtree.first.value();
             BTreeEntry entryToDelete = node.getEntryWithKey(key).value();
             node.deleteEntryWithKey(key);
             minEntry.setChildPtr(entryToDelete.getChildPtr());
@@ -546,6 +548,7 @@ void IndexManager::deleteKey(Node& node, uint64_t key)
             {
                 rootCache = node;
             }
+            this->deleteKey(minElementFromRightSubtree.second.value(), minEntry.getKey().value());
             return;
         }
 
@@ -568,14 +571,15 @@ void IndexManager::deleteKeyFromLeaf(Node& node, uint64_t key)
     }
     else
     {
-        if(!checkIfCanCompensateAfterDeletion(node))
-        {
-            throw std::runtime_error("Merge not implemented yet");
-        }
+        // if(!checkIfCanCompensateAfterDeletion(node))
+        // {
+        //     throw std::runtime_error("Merge not implemented yet");
+        // }
+        throw std::runtime_error("Merge not implemented yet");
     }
 }
 
-std::optional<BTreeEntry> IndexManager::findMaxElementFromLeftSubtree(Node& node)
+std::pair<std::optional<BTreeEntry>, std::optional<Node>> IndexManager::findMaxElementFromLeftSubtree(Node& node)
 {
     if(node.getIsLeaf())
     {
@@ -590,16 +594,16 @@ std::optional<BTreeEntry> IndexManager::findMaxElementFromLeftSubtree(Node& node
 
     if(currentNode.getNumberOfKeys() - 1 < treeOrder)
     {
-        return std::nullopt;
+        return std::make_pair(std::nullopt, std::nullopt);
     }
     BTreeEntry maxEntry = currentNode.popRightMostEntryWithKey();
     IndexFileManager.openFileStream();
     IndexFileManager.writeBlockToFile(currentNode.getBlockIndex(), currentNode.serialize().get());
     IndexFileManager.closeFileStream();
-    return maxEntry;
+    return std::make_pair(maxEntry, currentNode);
 }
 
-std::optional<BTreeEntry> IndexManager::findMinElementFromRightSubtree(Node& node)
+std::pair<std::optional<BTreeEntry>, std::optional<Node>> IndexManager::findMinElementFromRightSubtree(Node& node)
 {
     if(node.getIsLeaf())
     {
@@ -614,13 +618,11 @@ std::optional<BTreeEntry> IndexManager::findMinElementFromRightSubtree(Node& nod
 
     if(currentNode.getNumberOfKeys() - 1 < treeOrder)
     {
-        return std::nullopt;
+        return std::make_pair(std::nullopt, std::nullopt);
     }
 
-    BTreeEntry minEntry = currentNode.popLeftMostEntryWithKey();
-    IndexFileManager.openFileStream();
-    IndexFileManager.writeBlockToFile(currentNode.getBlockIndex(), currentNode.serialize().get());
-    IndexFileManager.closeFileStream();
-    return minEntry;
+    BTreeEntry minEntry = currentNode.getLeftMostEntryWithKey();
+
+    return std::make_pair(minEntry, currentNode);
 
 }

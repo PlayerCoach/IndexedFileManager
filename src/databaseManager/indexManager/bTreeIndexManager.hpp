@@ -45,8 +45,8 @@ class IndexManager
     std::string deleteKeyPreparation(uint64_t key);
     void deleteKey(Node& node, uint64_t key);
     void deleteKeyFromLeaf(Node& node, uint64_t key);
-        std::optional<BTreeEntry> findMaxElementFromLeftSubtree(Node& node);
-        std::optional<BTreeEntry> findMinElementFromRightSubtree(Node& node);
-    bool checkIfCanCompensateAfterDeletion(Node& node);
-    void compensateAfterDeletion(Node& node, Node& parentNode, Node& siblingNode, BTreeEntry entry, bool isLeftSibling);
+        std::pair<std::optional<BTreeEntry>, std::optional<Node>> findMaxElementFromLeftSubtree(Node& node);
+        std::pair<std::optional<BTreeEntry>, std::optional<Node>> findMinElementFromRightSubtree(Node& node);
+    //bool checkIfCanCompensateAfterDeletion(Node& node);
+    //void compensateAfterDeletion(Node& node, Node& parentNode, Node& siblingNode, BTreeEntry entry, bool isLeftSibling);
 };

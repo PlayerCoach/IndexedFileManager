@@ -185,6 +185,29 @@ BTreeEntry Node::popRightMostEntryWithKey()
     return entry;
 }
 
+BTreeEntry Node::getLeftMostEntryWithKey() 
+{
+    if(entries.empty()) 
+        throw std::runtime_error("Node is empty");
+
+    BTreeEntry entry = entries.front();
+    if(entry.getKey().has_value()) 
+        return entry;
+
+    return entries[1];
+}
+
+BTreeEntry Node::getRightMostEntryWithKey() 
+{
+    if(entries.empty()) 
+        throw std::runtime_error("Node is empty");
+
+    BTreeEntry entry = entries.back();
+    if(entry.getKey().has_value()) 
+        return entry;
+
+    throw std::runtime_error("Entry without key");
+}
 size_t Node::getMaxNumberOfKeys() const 
 {
     return 2 * order;

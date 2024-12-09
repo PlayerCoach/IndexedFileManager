@@ -45,8 +45,11 @@ public:
 
     void deleteEntryAtIndex(size_t index);
     void deleteEntryWithKey(uint64_t key);
+
     BTreeEntry popLeftMostEntryWithKey();
     BTreeEntry popRightMostEntryWithKey();
+    BTreeEntry getLeftMostEntryWithKey();
+    BTreeEntry getRightMostEntryWithKey();
     std::optional<BTreeEntry> popEntryWithoutKey();
 
     std::vector<BTreeEntry> getEntries() const { return entries; }
