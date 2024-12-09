@@ -8,7 +8,7 @@ IndexManager::IndexManager(std::string indexFilePath)
     IndexFileManager.openFileStream();
     if (IndexFileManager.checkIfFileIsEmpty())
     {
-        Node root(treeOrder, 0, std::nullopt, true);
+        Node root(treeOrder, 0, true);
         IndexFileManager.writeBlockToFile(this->writeBlockIndex, root.serialize().get());
         this->writeBlockIndex++;
         rootCache = root;
@@ -86,24 +86,23 @@ void IndexManager::insertToNode(Node& node, BTreeEntry entry)
 
 void IndexManager::split(Node& node, BTreeEntry entry)
 {
-    if(!node.getParentPtr().has_value())
+    if(!this->getParentNode(node).has_value())
     {
         splitRoot(node, entry);
         return;
     }
 
-    Node parentNode = getNode(node.getParentPtr().value());
+    Node parentNode = this->getParentNode(node).value();
     Node rightNode = createNode(node.getIsLeaf(), this->writeBlockIndex);
     this->writeBlockIndex++;
     // current node will be left node
     node.insertEntry(entry);
     BTreeEntry ascendedEntry = node.retrieveMedianKeyEntry();
     std::pair<std::vector<BTreeEntry>, std::vector<BTreeEntry>> splitEntries = node.splitNode(); // split cleans the node
-    node.setParentPtr(parentNode.getBlockIndex()); // <- issue somewhere here, parent ptr is not set correctly
 
     rightNode.setEntries(splitEntries.second);
     rightNode.insertChildPtr(ascendedEntry.getChildPtr());
-    rightNode.setParentPtr(parentNode.getBlockIndex());
+    
     rightNode.setIsFull(false);
 
     //insert ptr to right node to the ascended entry
@@ -133,11 +132,9 @@ void IndexManager::splitRoot(Node& node, BTreeEntry entry)
 
     std::pair<std::vector<BTreeEntry>, std::vector<BTreeEntry>> splitEntries = node.splitNode(); // split cleans the node
     leftNode.setEntries(splitEntries.first);
-    leftNode.setParentPtr(0);
     leftNode.setIsFull(false);
 
     rightNode.setEntries(splitEntries.second);
-    rightNode.setParentPtr(0);
     rightNode.setIsFull(false);
     
     //insert old ptr of ascended node to the most left  of the right node
@@ -204,7 +201,7 @@ Node IndexManager::getNode(uint32_t blockIndex)
 
 Node IndexManager::createNode(bool isLeaf, uint32_t blockIndex)
 {
-    return Node(treeOrder, blockIndex, std::nullopt, isLeaf);
+    return Node(treeOrder, blockIndex, isLeaf);
 }
 
 void IndexManager::readBTree()
@@ -232,15 +229,6 @@ void IndexManager::readNode(Node& node)
     std::cout << "Node: " << node.getBlockIndex() << std::endl;
     std::cout << "Node is leaf: " << node.getIsLeaf() << std::endl;
     std::cout << "Node is full: " << node.getIsFull() << std::endl;
-    if(node.getParentPtr().has_value())
-    {
-        std::cout << "Node parent ptr: " << node.getParentPtr().value() << std::endl;
-    }
-    else
-    {
-        std::cout << "Node has no parent" << std::endl;
-    }
-
     std::cout << "NumberOfKeys: " << node.getNumberOfKeys() << std::endl;
     
    for(auto entry : node.getEntries())
@@ -260,12 +248,12 @@ void IndexManager::readNode(Node& node)
 
 bool IndexManager::checkIfCanCompensate(Node& node, BTreeEntry entry)
 {
-    if(!node.getParentPtr().has_value())
+    if(!this->getParentNode(node).has_value())
     {
         return false;
     }
 
-    Node parentNode = getNode(node.getParentPtr().value());
+    Node parentNode = this->getParentNode(node).value();
     size_t index = -1;
 
     std::pair<std::optional<Node>,std::optional<Node>> siblings = findSiblings(parentNode, node.getBlockIndex());
@@ -437,7 +425,6 @@ void IndexManager::updateParentPtrs()
             if(entry.getChildPtr().has_value())
             {
                 Node childNode = getNode(entry.getChildPtr().value());
-                childNode.setParentPtr(currentNode.getBlockIndex());
                 IndexFileManager.openFileStream();
                 IndexFileManager.writeBlockToFile(childNode.getBlockIndex(), childNode.serialize().get());
                 IndexFileManager.closeFileStream();
@@ -445,4 +432,41 @@ void IndexManager::updateParentPtrs()
             }
         }
     }
+}
+
+std::optional<Node> IndexManager::getParentNode(const Node& node)
+{
+
+
+   if(rootCache.getBlockIndex() == node.getBlockIndex())
+    {
+         return std::nullopt; // root has no parent
+    }
+   
+    std::queue<Node> q;
+    q.push(rootCache);
+
+    while(!q.empty())
+    {
+        Node currentNode = q.front();
+        q.pop();
+        for(auto entry : currentNode.getEntries())
+        {
+            if(entry.getChildPtr().has_value())
+            {
+                Node childNode = getNode(entry.getChildPtr().value()); // implement caching later on
+                if(childNode.getBlockIndex() == node.getBlockIndex())
+                {
+                    return currentNode;
+                }
+                q.push(childNode);
+            }
+        }
+       
+    }
+
+   
+
+
+
 }

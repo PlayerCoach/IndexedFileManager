@@ -40,4 +40,5 @@ class IndexManager
     void compensate(Node& node, Node& parentNode, Node& siblingNode, BTreeEntry entry,  bool isLeftSibling);
     void readNode(Node& node);
     void updateParentPtrs();
+    std::optional<Node> getParentNode(const Node& node);
 };

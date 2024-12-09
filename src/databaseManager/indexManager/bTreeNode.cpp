@@ -1,14 +1,14 @@
 #include "bTreeNode.hpp"
 
-Node::Node(uint32_t order, uint32_t selfPtr, std::optional<uint32_t> parentPtr, bool isLeaf)
-    : order(order), selfPtr(selfPtr), parentPtr(parentPtr), isLeaf(isLeaf), isFull(false), numberOfKeys(0) 
+Node::Node(uint32_t order, uint32_t selfPtr, bool isLeaf)
+    : order(order), selfPtr(selfPtr), isLeaf(isLeaf), isFull(false), numberOfKeys(0) 
 {  
     entries.reserve(2 * order + 1);
 }
 
 
-Node::Node(uint32_t order, uint32_t selfPtr, std::optional<uint32_t> parentPtr, bool isLeaf, bool isFull, std::vector<BTreeEntry> entries)
-    : order(order), selfPtr(selfPtr), parentPtr(parentPtr), isLeaf(isLeaf), isFull(isFull), numberOfKeys(0), entries(entries) 
+Node::Node(uint32_t order, uint32_t selfPtr, bool isLeaf, bool isFull, std::vector<BTreeEntry> entries)
+    : order(order), selfPtr(selfPtr), isLeaf(isLeaf), isFull(isFull), numberOfKeys(0), entries(entries) 
 {
     countKeys();
 }
@@ -33,7 +33,7 @@ void Node::countKeys()
 
 void Node::clearNode() // maby fix this later
 {
-    *this = Node(order, selfPtr, std::nullopt, false);
+    *this = Node(order, selfPtr, false);
     
 }
 
@@ -85,11 +85,6 @@ void Node::setEntries(std::vector<BTreeEntry> entries)
 {
     this->entries = entries;
     countKeys();
-}
-
-void Node::setParentPtr(std::optional<uint32_t> parentPtr) 
-{
-    this->parentPtr = parentPtr;
 }
 
 void Node::setIsLeaf(bool isLeaf) 
@@ -206,10 +201,6 @@ uint32_t Node::getBlockIndex() const
     return selfPtr;
 }
 
-std::optional<uint32_t> Node::getParentPtr() const 
-{
-    return parentPtr;
-}
 
 uint32_t Node::getNumberOfKeys() const 
 {
@@ -244,7 +235,6 @@ int Node::size(int order)
     int size = 0;
 
     size += sizeof(uint32_t); // selfPtr
-    size += sizeOptional<uint32_t>(); // parentPtr
     size += sizeof(bool); // isFull
     size += sizeof(bool); // isLeaf
     size += (2 * order + 1) * BTreeEntry::size();
@@ -261,8 +251,6 @@ std::unique_ptr<char[]> Node::serialize() const
     memcpy(ptr, &selfPtr, sizeof(uint32_t));
     ptr += sizeof(uint32_t);
 
-    serializeOptional<uint32_t>(parentPtr, ptr);
-    
     memcpy(ptr, &isFull, sizeof(bool));
     ptr += sizeof(bool);
 
@@ -302,8 +290,6 @@ std::optional<Node> Node::deserialize(char* data, uint32_t order)
     uint32_t selfPtr = *reinterpret_cast<int32_t*>(ptr);
     ptr += sizeof(uint32_t);
 
-    std::optional<uint32_t> parentPtr = deserializeOptional<uint32_t>(ptr);
-
     bool isFull = *reinterpret_cast<bool*>(ptr);
     ptr += sizeof(bool);
 
@@ -326,6 +312,6 @@ std::optional<Node> Node::deserialize(char* data, uint32_t order)
         ptr += BTreeEntry::size();
     }
 
-    return Node(order,selfPtr, parentPtr, isLeaf, isFull, entries);
+    return Node(order, selfPtr, isLeaf, isFull, entries);
 }
 

@@ -26,9 +26,9 @@ public:
 
     Node() = default;
     
-    Node(uint32_t order, uint32_t selfPtr,  std::optional<uint32_t> parentPtr, bool isLeaf);
+    Node(uint32_t order, uint32_t selfPtr, bool isLeaf);
 
-    Node(uint32_t order, uint32_t selfPtr, std::optional<uint32_t> parentPtr, bool isLeaf, bool isFull, std::vector<BTreeEntry> entries);
+    Node(uint32_t order, uint32_t selfPtr, bool isLeaf, bool isFull, std::vector<BTreeEntry> entries);
         
 
     void countKeys();
@@ -54,7 +54,7 @@ public:
     bool getIsLeaf() const ;
     bool getIsFull() const ;
     uint32_t getBlockIndex() const ;
-    std::optional<uint32_t> getParentPtr() const;
+    // std::optional<uint32_t> getParentPtr() const;
     uint32_t getNumberOfKeys() const;
     BTreeEntry retrieveMedianKeyEntry() const;
 
