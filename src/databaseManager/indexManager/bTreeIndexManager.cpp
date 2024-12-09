@@ -25,22 +25,33 @@ IndexManager::IndexManager(std::string indexFilePath)
     IndexFileManager.closeFileStream();
 }
 
-void IndexManager::insert(DataEntry dataEntry, uint32_t databaseBlockIndex)
+void IndexManager::insertPreparation(DataEntry DataEntry, uint32_t databaseBlockIndex)
 {
-    uint64_t key = dataEntry.getKey();
-    uint32_t dataBlockPtr = databaseBlockIndex;
+    BTreeEntry entry(DataEntry.getKey(), databaseBlockIndex, std::nullopt);
+    this->insertToLeaf(entry);
 
-    Node nodeToInsert = findLeafNodeForKey(key);
+}
+
+    
+void IndexManager::insertToLeaf(BTreeEntry entry)
+{
+    if(entry.getKey().has_value() == false)
+    {
+        throw std::runtime_error("Key is not set");
+    }
+
+
+    Node nodeToInsert = findLeafNodeForKey(entry.getKey().value());
     if(nodeToInsert.getIsFull())
     {
-        if(!checkIfCanCompensate(nodeToInsert, key, dataBlockPtr))
-            this->split(dataEntry, nodeToInsert, key, dataBlockPtr);
+        if(!checkIfCanCompensate(nodeToInsert, entry))
+            this->split(nodeToInsert, entry);
         
         return ; // if we split, we dont want to insert again
     }
 
     
-    nodeToInsert.insertKey(key, dataBlockPtr);
+    nodeToInsert.insertEntry(entry);
     if(nodeToInsert.getBlockIndex() == 0)
     {
         rootCache = nodeToInsert;
@@ -52,19 +63,43 @@ void IndexManager::insert(DataEntry dataEntry, uint32_t databaseBlockIndex)
     
 }
 
-void IndexManager::split(BTreeEntry& data, Node& node, uint64_t key, uint32_t dataBlockPtr)
+void IndexManager::insertToNode(Node& node, BTreeEntry entry)
+{
+   
+    if(node.getIsFull())
+    {
+        if(!checkIfCanCompensate(node, entry))
+            this->split(node, entry);
+        return;
+    }
+
+    node.insertEntry(entry);
+    if(node.getBlockIndex() == 0)
+    {
+        rootCache = node;
+    }
+    IndexFileManager.openFileStream();
+    IndexFileManager.writeBlockToFile(node.getBlockIndex(), node.serialize().get());
+    IndexFileManager.closeFileStream();
+    
+}
+
+void IndexManager::split(Node& node, BTreeEntry entry)
 {
     if(!node.getParentPtr().has_value())
     {
-        splitRoot(data, node, key, dataBlockPtr);
+        splitRoot(node, entry);
+        return;
     }
 
     Node parentNode = getNode(node.getParentPtr().value());
     Node rightNode = createNode(node.getIsLeaf(), this->writeBlockIndex);
+    this->writeBlockIndex++;
     // current node will be left node
-    node.insertEntry(BTreeEntry(key, dataBlockPtr, std::nullopt));
+    node.insertEntry(entry);
     BTreeEntry ascendedEntry = node.retrieveMedianKeyEntry();
     std::pair<std::vector<BTreeEntry>, std::vector<BTreeEntry>> splitEntries = node.splitNode(); // split cleans the node
+    node.setParentPtr(parentNode.getBlockIndex()); // <- issue somewhere here, parent ptr is not set correctly
 
     rightNode.setEntries(splitEntries.second);
     rightNode.insertChildPtr(ascendedEntry.getChildPtr());
@@ -81,19 +116,18 @@ void IndexManager::split(BTreeEntry& data, Node& node, uint64_t key, uint32_t da
     IndexFileManager.writeBlockToFile(rightNode.getBlockIndex(), rightNode.serialize().get());
     IndexFileManager.closeFileStream();
 
-    this->insert(ascendedEntry, rightNode.getBlockIndex());
+    this->insertToNode(parentNode, ascendedEntry);
 
 }
 
-void IndexManager::splitRoot(DataEntry& data, Node& node, uint64_t key, uint32_t dataBlockPtr)
+void IndexManager::splitRoot(Node& node, BTreeEntry entry)
 {
     Node leftNode = createNode(node.getIsLeaf(), this->writeBlockIndex);
     this->writeBlockIndex++;
     Node rightNode = createNode(node.getIsLeaf(), this->writeBlockIndex);
     this->writeBlockIndex++;
 
-    BTreeEntry tempEntry(key, dataBlockPtr, std::nullopt);
-    node.insertEntry(tempEntry);
+    node.insertEntry(entry);
 
     BTreeEntry ascendedEntry = node.retrieveMedianKeyEntry();
 
@@ -222,7 +256,7 @@ void IndexManager::readNode(Node& node)
 
 }
 
-bool IndexManager::checkIfCanCompensate(Node& node, const uint64_t key, const uint32_t dataBlockPtr)
+bool IndexManager::checkIfCanCompensate(Node& node, BTreeEntry entry)
 {
     if(!node.getParentPtr().has_value())
     {
@@ -238,7 +272,7 @@ bool IndexManager::checkIfCanCompensate(Node& node, const uint64_t key, const ui
         if(siblings.first.value().getNumberOfKeys() < 2*treeOrder)
         {
             bool isLeftSibling = true;
-            compensate(node,parentNode, siblings.first.value(), key, dataBlockPtr, isLeftSibling);
+            compensate(node,parentNode, siblings.first.value(), entry, isLeftSibling);
             return true;
         }
     }
@@ -248,7 +282,7 @@ bool IndexManager::checkIfCanCompensate(Node& node, const uint64_t key, const ui
         if(siblings.second.value().getNumberOfKeys() < 2*treeOrder)
         {
             bool isLeftSibling = false;
-            compensate(node, parentNode, siblings.second.value(), key, dataBlockPtr, isLeftSibling);
+            compensate(node, parentNode, siblings.second.value(), entry, isLeftSibling);
             return true;
         }
     }
@@ -290,7 +324,7 @@ std::pair<std::optional<Node>,std::optional<Node>> IndexManager::findSiblings(co
     }
 }
 
-void IndexManager::compensate(Node& node, Node& parentNode, Node& siblingNode, uint64_t key, uint32_t dataBlockPtr, bool hasLeftSibling)
+void IndexManager::compensate(Node& node, Node& parentNode, Node& siblingNode, BTreeEntry entry, bool hasLeftSibling)
 {
 
      size_t index = -1;
@@ -309,7 +343,7 @@ void IndexManager::compensate(Node& node, Node& parentNode, Node& siblingNode, u
         index++; // its right slibing so i want to rotate with entry that has address of right sibling
         BTreeEntry currentRootEntry = parentNode.getEntries()[index]; // if this is right sibling, then its 100% node with key
 
-        node.insertEntry(BTreeEntry(key, dataBlockPtr, std::nullopt)); // temporary overflow
+        node.insertEntry(entry); // temporary overflow
         BTreeEntry entryToAscend = node.popRightMostEntryWithKey(); // this will become new root entry, 
 
         std::optional<uint32_t> ascendedEntryChildPtr = entryToAscend.getChildPtr();
@@ -348,7 +382,7 @@ void IndexManager::compensate(Node& node, Node& parentNode, Node& siblingNode, u
             // if this is most left entry, then what???
         }
         
-        node.insertEntry(BTreeEntry(key, dataBlockPtr, std::nullopt)); // temporary overflow
+        node.insertEntry(entry); // temporary overflow
         BTreeEntry entryToAscend = node.popLeftMostEntryWithKey(); // this will become new root entry,
 
         std::optional<uint32_t> ascendedEntryChildPtr = entryToAscend.getChildPtr();

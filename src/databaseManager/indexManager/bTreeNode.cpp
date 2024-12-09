@@ -218,9 +218,6 @@ uint32_t Node::getNumberOfKeys() const
 
 BTreeEntry Node::retrieveMedianKeyEntry() const 
 {
-    if(this->entryWithoutKeyExists)
-        return entries[entries.size() / 2 + 1];
-
     return entries[entries.size() / 2];
 }
 
@@ -231,10 +228,7 @@ std::pair<std::vector<BTreeEntry>, std::vector<BTreeEntry>> Node::splitNode()
 
     size_t middle = entries.size() / 2;
 
-    if(this->entryWithoutKeyExists)
-        size_t middle = entries.size() / 2 + 1;
    
-
     std::vector<BTreeEntry> left(entries.begin(), entries.begin() + middle);
     std::vector<BTreeEntry> right(entries.begin() + middle + 1, entries.end());
 

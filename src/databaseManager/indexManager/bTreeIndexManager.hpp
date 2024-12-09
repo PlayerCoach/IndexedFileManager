@@ -25,17 +25,18 @@ class IndexManager
     public:
     IndexManager() = default;
     IndexManager(std::string indexFilePath);
-
-    void insert(DataEntry dataEntry, uint32_t databaseBlockIndex);
+    void insertPreparation(DataEntry dataEntry, uint32_t databaseBlockIndex);
+    void insertToLeaf(BTreeEntry entry);
+    void insertToNode(Node& node, BTreeEntry entry);
     std::optional<size_t> getInsertPosition(Node& node, uint64_t key);
     Node findLeafNodeForKey(uint64_t key);
     Node getNode(uint32_t blockIndex);
     Node createNode(bool isLeaf, uint32_t blockIndex);
     void readBTree();
-    void split(DataEntry& data, Node& node, uint64_t key, uint32_t dataBlockPtr);
-    void splitRoot(DataEntry& data, Node& node, uint64_t key, uint32_t dataBlockPtr);
-    bool checkIfCanCompensate(Node& node, const uint64_t key, const uint32_t dataBlockPtr);
+    void split(Node& node, BTreeEntry entry);
+    void splitRoot(Node& node, BTreeEntry entry);
+    bool checkIfCanCompensate(Node& node, BTreeEntry entry);
     std::pair<std::optional<Node>,std::optional<Node>> findSiblings(const Node& parentNode, uint32_t blockIndex);
-    void compensate(Node& node, Node& parentNode, Node& siblingNode, uint64_t key, uint32_t dataBlockPtr, bool isLeftSibling);
+    void compensate(Node& node, Node& parentNode, Node& siblingNode, BTreeEntry entry,  bool isLeftSibling);
     void readNode(Node& node);
 };

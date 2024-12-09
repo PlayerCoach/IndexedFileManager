@@ -48,7 +48,7 @@ void DatabaseManager::writeDataToDatabase(DataEntry& dataEntry)
     databaseFileManager.openFileStream();
     databaseFileManager.insertDataEntryToLastBlockData(dataEntry.serialize().get());
     databaseFileManager.closeFileStream();
-    indexManager->insert(dataEntry, databaseFileManager.getIndexOfLastBlock()); 
+    indexManager->insertPreparation(dataEntry, databaseFileManager.getIndexOfLastBlock()); 
     indexManager->readBTree();
 
 }
