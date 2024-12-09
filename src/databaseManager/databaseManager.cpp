@@ -70,6 +70,13 @@ void DatabaseManager::readDataFromDatabase(const int& index)
     }
 }
 
+std::string DatabaseManager::deleteRecordFromDatabase(const uint64_t& key)
+{
+    std::string result = this->indexManager->deleteKey(key);
+    this->indexManager->readBTree();
+    return result; 
+}
+
 
 std::vector<DataEntry> DatabaseManager::deserializeDataBlock(char* data)
 {

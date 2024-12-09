@@ -31,7 +31,7 @@ void Node::countKeys()
     }
 }
 
-void Node::clearNode() // maby fix this later
+void Node::clearNode() 
 {
     *this = Node(order, selfPtr, false);
     
@@ -119,6 +119,25 @@ void Node::deleteEntryAtIndex(size_t index)
         numberOfKeys--;
 
     entries.erase(entries.begin() + index);
+
+    if (numberOfKeys < 2 * order) 
+        isFull = false;
+}
+
+void Node::deleteEntryWithKey(uint64_t key) 
+{
+    BTreeEntry wrapper = BTreeEntry(key, std::nullopt, std::nullopt); // entries are compared by key
+    auto entry = std::find_if(entries.begin(), entries.end(), [&](const BTreeEntry& entry) {
+        return entry == wrapper;
+    });
+
+    if(entry == entries.end()) 
+        throw std::runtime_error("Entry not found");
+
+    if(entry->getKey().has_value())
+        numberOfKeys--;
+
+    entries.erase(entry);
 
     if (numberOfKeys < 2 * order) 
         isFull = false;
@@ -212,6 +231,20 @@ BTreeEntry Node::retrieveMedianKeyEntry() const
     return entries[entries.size() / 2];
 }
 
+std::optional<BTreeEntry> Node::getEntryWithKey(uint64_t key) const
+{
+    BTreeEntry wrapper = BTreeEntry(key, std::nullopt, std::nullopt);
+    auto entry = std::find_if(entries.begin(), entries.end(), [&](const BTreeEntry& entry) {
+        return entry == wrapper;
+    });
+
+    if(entry == entries.end()) 
+        return std::nullopt;
+
+    return *entry;
+}
+  
+
 std::pair<std::vector<BTreeEntry>, std::vector<BTreeEntry>> Node::splitNode() 
 {
     if(!isFull) 
@@ -230,9 +263,9 @@ std::pair<std::vector<BTreeEntry>, std::vector<BTreeEntry>> Node::splitNode()
 }
 
 
-int Node::size(int order) 
+size_t Node::size(int order) 
 {
-    int size = 0;
+    size_t size = 0;
 
     size += sizeof(uint32_t); // selfPtr
     size += sizeof(bool); // isFull

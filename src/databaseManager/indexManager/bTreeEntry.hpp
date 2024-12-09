@@ -105,8 +105,10 @@ public:
 
     }
 
-    friend bool operator==(const BTreeEntry& a, const BTreeEntry& b) 
+    friend bool operator==(const BTreeEntry& a, const BTreeEntry& b) //this might be a problem 
     {
+        if(!a.getKey().has_value() || !b.getKey().has_value())
+            return false; // if one of the keys is not set, they are not equal if both are not set, they are still not equal
         return a.getKey().value() == b.getKey().value();
     }
 

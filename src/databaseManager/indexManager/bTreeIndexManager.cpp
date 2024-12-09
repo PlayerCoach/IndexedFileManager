@@ -171,7 +171,7 @@ Node IndexManager::findLeafNodeForKey(uint64_t key)
         {
             size_t mid = left + (right - left) / 2;
 
-            if (entries[mid].getKey().has_value() && key < entries[mid].getKey().value())
+            if (wrapperForKey < entries[mid])
             {
                 right = mid;
             }
@@ -408,16 +408,12 @@ void IndexManager::compensate(Node& node, Node& parentNode, Node& siblingNode, B
             rootCache = parentNode;
         }
 
-
-
-
     }
     
 }
 
 std::optional<Node> IndexManager::getParentNode(const Node& node)
 {
-
 
    if(rootCache.getBlockIndex() == node.getBlockIndex())
     {
@@ -446,8 +442,185 @@ std::optional<Node> IndexManager::getParentNode(const Node& node)
        
     }
 
-   
+    return std::nullopt;
+}
 
+std::optional<Node> IndexManager::findNodeWithKey(uint64_t key)
+{
+    BTreeEntry wrapperForKey = BTreeEntry(key, std::nullopt, std::nullopt);
+    Node currentNode = rootCache;
 
+    while (true)
+    {
+        const auto& entries = currentNode.getEntries();
+        size_t left = 0;
+        size_t right = entries.size();
+
+        // Perform binary search to find the appropriate child pointer.
+        while (left < right)
+        {
+            size_t mid = left + (right - left) / 2;
+
+            if(wrapperForKey == entries[mid])
+            {
+                return currentNode;
+            }
+            else if(wrapperForKey < entries[mid])
+            {
+                right = mid;
+            }
+            else
+            {
+                left = mid + 1;
+            }
+
+            
+        }
+
+        size_t childIndex = (left == 0) ? 0 : left - 1;
+        const auto& selectedEntry = entries[childIndex];
+
+        if (!selectedEntry.getChildPtr().has_value())
+        {
+            return std::nullopt;
+        }
+
+        currentNode = getNode(selectedEntry.getChildPtr().value());
+
+    } 
+
+}
+
+std::string IndexManager::deleteKeyPreparation(uint64_t key)
+{
+    std::optional<Node> nodeWithKey = findNodeWithKey(key);
+    if(!nodeWithKey.has_value())
+    {
+        return "Key not found";
+    }
+    Node node = nodeWithKey.value();
+    this->deleteKey(node, key);
+    return "Key deleted";
+}
+
+void IndexManager::deleteKey(Node& node, uint64_t key)
+{
+
+    if(node.getIsLeaf())
+    {
+        this->deleteKeyFromLeaf(node, key);
+
+    }
+    else
+    {
+        std::optional<BTreeEntry> maxElementFromLeftSubtree = findMaxElementFromLeftSubtree(node);
+        if(maxElementFromLeftSubtree.has_value())
+        {
+            BTreeEntry maxEntry = maxElementFromLeftSubtree.value();
+            BTreeEntry entryToDelete = node.getEntryWithKey(key).value();
+            node.deleteEntryWithKey(key);
+            maxEntry.setChildPtr(entryToDelete.getChildPtr());
+            node.insertEntry(maxEntry);
+            IndexFileManager.openFileStream();
+            IndexFileManager.writeBlockToFile(node.getBlockIndex(), node.serialize().get());
+            IndexFileManager.closeFileStream();
+            if(node.getBlockIndex() == 0)
+            {
+                rootCache = node;
+            }
+            return;
+        }
+
+        std::optional<BTreeEntry> minElementFromRightSubtree = findMinElementFromRightSubtree(node);
+        if(minElementFromRightSubtree.has_value())
+        {
+            BTreeEntry minEntry = minElementFromRightSubtree.value();
+            BTreeEntry entryToDelete = node.getEntryWithKey(key).value();
+            node.deleteEntryWithKey(key);
+            minEntry.setChildPtr(entryToDelete.getChildPtr());
+            node.insertEntry(minEntry);
+            IndexFileManager.openFileStream();
+            IndexFileManager.writeBlockToFile(node.getBlockIndex(), node.serialize().get());
+            IndexFileManager.closeFileStream();
+            if(node.getBlockIndex() == 0)
+            {
+                rootCache = node;
+            }
+            return;
+        }
+
+        throw std::runtime_error("Merge not implemented yet");
+    }
+    
+    return;
+
+}
+
+void IndexManager::deleteKeyFromLeaf(Node& node, uint64_t key)
+{
+    if(node.getNumberOfKeys() > treeOrder)
+    {
+        node.deleteEntryWithKey(key);
+        IndexFileManager.openFileStream();
+        IndexFileManager.writeBlockToFile(node.getBlockIndex(), node.serialize().get());
+        IndexFileManager.closeFileStream();
+        return;
+    }
+    else
+    {
+        if(!checkIfCanCompensateAfterDeletion(node))
+        {
+            throw std::runtime_error("Merge not implemented yet");
+        }
+    }
+}
+
+std::optional<BTreeEntry> IndexManager::findMaxElementFromLeftSubtree(Node& node)
+{
+    if(node.getIsLeaf())
+    {
+        throw std::runtime_error("Node is leaf");
+    }
+
+    Node currentNode = getNode(node.getEntries()[0].getChildPtr().value());
+    while(!currentNode.getIsLeaf())
+    {
+        currentNode = getNode(currentNode.getEntries().back().getChildPtr().value());
+    }
+
+    if(currentNode.getNumberOfKeys() - 1 < treeOrder)
+    {
+        return std::nullopt;
+    }
+    BTreeEntry maxEntry = currentNode.popRightMostEntryWithKey();
+    IndexFileManager.openFileStream();
+    IndexFileManager.writeBlockToFile(currentNode.getBlockIndex(), currentNode.serialize().get());
+    IndexFileManager.closeFileStream();
+    return maxEntry;
+}
+
+std::optional<BTreeEntry> IndexManager::findMinElementFromRightSubtree(Node& node)
+{
+    if(node.getIsLeaf())
+    {
+        throw std::runtime_error("Node is leaf");
+    }
+
+    Node currentNode = getNode(node.getEntries().back().getChildPtr().value());
+    while(!currentNode.getIsLeaf())
+    {
+        currentNode = getNode(currentNode.getEntries()[0].getChildPtr().value());
+    }
+
+    if(currentNode.getNumberOfKeys() - 1 < treeOrder)
+    {
+        return std::nullopt;
+    }
+
+    BTreeEntry minEntry = currentNode.popLeftMostEntryWithKey();
+    IndexFileManager.openFileStream();
+    IndexFileManager.writeBlockToFile(currentNode.getBlockIndex(), currentNode.serialize().get());
+    IndexFileManager.closeFileStream();
+    return minEntry;
 
 }

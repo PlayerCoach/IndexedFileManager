@@ -4,6 +4,7 @@
 #include "quitCommand.hpp"
 #include "clearCommand.hpp"
 #include "addCommand.hpp"
+#include "deleteCommand.hpp"
 #include "commands.hpp"
 #include <unordered_map>
 #include <functional>
@@ -22,6 +23,7 @@ class CommandFactory
             commandMap[Commands::QUIT] = []() { return std::make_unique<QuitCommand>(); };
             commandMap[Commands::CLEAR] = []() { return std::make_unique<ClearCommand>(); };
             commandMap[Commands::ADD] = []() { return std::make_unique<AddCommand>(); };
+            commandMap[Commands::DELETE] = []() { return std::make_unique<DeleteCommand>(); };
         }
 
         std::unique_ptr<Command> createCommand(const std::string& commandName) {

@@ -8,6 +8,7 @@ namespace Commands {
     const std::string CLEAR = "clear";
     const std::string SHOW = "show";
     const std::string HELP_FLAG = "--help";
+    const std::string DELETE = "delete";
 
     const std::string INVALID_COMMAND = "Invalid command. For help, type: " + HELP;
     const std::string INVALID_FLAGS_ERROR = "Invalid flags. For help, type command name with " + HELP_FLAG;

@@ -19,7 +19,7 @@ class IndexManager
     Node rootCache;
     FileManager IndexFileManager;
     const uint32_t treeOrder = 2;
-    const int indexPageSize = Node::size(treeOrder);
+    const size_t indexPageSize = Node::size(treeOrder);
     uint32_t writeBlockIndex = 0;
 
     public:
@@ -28,9 +28,7 @@ class IndexManager
     void insertPreparation(DataEntry dataEntry, uint32_t databaseBlockIndex);
     void insertToLeaf(BTreeEntry entry);
     void insertToNode(Node& node, BTreeEntry entry);
-    std::optional<size_t> getInsertPosition(Node& node, uint64_t key);
     Node findLeafNodeForKey(uint64_t key);
-    std::optional<uint64_t> findChildPointerForKey(const Node& node, uint64_t key);
     Node getNode(uint32_t blockIndex);
     Node createNode(bool isLeaf, uint32_t blockIndex);
     void readBTree();
@@ -41,4 +39,14 @@ class IndexManager
     void compensate(Node& node, Node& parentNode, Node& siblingNode, BTreeEntry entry,  bool isLeftSibling);
     void readNode(Node& node);
     std::optional<Node> getParentNode(const Node& node);
+
+    std::optional<Node> findNodeWithKey(uint64_t key);
+
+    std::string deleteKeyPreparation(uint64_t key);
+    void deleteKey(Node& node, uint64_t key);
+    void deleteKeyFromLeaf(Node& node, uint64_t key);
+        std::optional<BTreeEntry> findMaxElementFromLeftSubtree(Node& node);
+        std::optional<BTreeEntry> findMinElementFromRightSubtree(Node& node);
+    bool checkIfCanCompensateAfterDeletion(Node& node);
+    void compensateAfterDeletion(Node& node, Node& parentNode, Node& siblingNode, BTreeEntry entry, bool isLeftSibling);
 };

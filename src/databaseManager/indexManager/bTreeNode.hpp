@@ -39,12 +39,12 @@ public:
     void insertEntry(const BTreeEntry& entry);
 
     void setEntries(std::vector<BTreeEntry> entries);
-    // void setParentPtr(std::optional<uint32_t> parentPtr);
     void setIsLeaf(bool isLeaf);
     void setIsFull(bool isFull);
     void setEntryChildPtr(uint64_t key_value, uint32_t childPtr);
 
     void deleteEntryAtIndex(size_t index);
+    void deleteEntryWithKey(uint64_t key);
     BTreeEntry popLeftMostEntryWithKey();
     BTreeEntry popRightMostEntryWithKey();
     std::optional<BTreeEntry> popEntryWithoutKey();
@@ -54,13 +54,13 @@ public:
     bool getIsLeaf() const ;
     bool getIsFull() const ;
     uint32_t getBlockIndex() const ;
-    // std::optional<uint32_t> getParentPtr() const;
     uint32_t getNumberOfKeys() const;
     BTreeEntry retrieveMedianKeyEntry() const;
+    std::optional<BTreeEntry> getEntryWithKey(uint64_t key) const;
 
     std::pair<std::vector<BTreeEntry>, std::vector<BTreeEntry>> splitNode();
 
-    static int size(int order);
+    static size_t size(int order);
     std::unique_ptr<char[]> serialize() const;
     static std::optional<Node> deserialize(char* data, uint32_t order);
 };

@@ -28,7 +28,7 @@ class AddCommand : public Command {
 
     void execute(std::vector<std::string> tokens) override
     {
-        if(!this->setCount(tokens)) return; // try to set count with first token
+        this->setCount(tokens);
         
         if(!this->setFlags(tokens)) return;
 
@@ -68,20 +68,19 @@ class AddCommand : public Command {
         return false;
     }
 
-    bool setCount(std::vector<std::string>& tokens)
+    void setCount(std::vector<std::string>& tokens)
     {
         try
         {
             count = stoi(tokens[0]);
-            tokens.erase(tokens.begin());
+            
         }
-        catch(const std::exception& e)
+        catch(const std::invalid_argument& e)
         {
-            std::cerr << e.what() <<  " No count provided" << std::endl;
-            return false;
-
+            return;
         }
-        return true;
+        tokens.erase(tokens.begin());
+        return;
     }
 
     void addRandomData(int count)
@@ -97,18 +96,24 @@ class AddCommand : public Command {
     }
 
     void addUserData(int count)
-    {
-        std::cout<< " Enter Key: ";
-        uint64_t key;
-        std::cin >> key;
-        std::cout << "Enter record: ";
-        std::vector<int32_t> record;
-        int32_t number;
-        std::cin >> number;
+{
+    std::cout << "Enter Key: ";
+    std::string keyInput;
+    std::getline(std::cin, keyInput);
+    uint64_t key = std::stoull(keyInput); // Convert string to uint64_t
+
+    std::cout << "Enter record (space-separated integers): ";
+    std::string recordInput;
+    std::getline(std::cin, recordInput);
+    std::istringstream recordStream(recordInput);
+    std::vector<int32_t> record;
+    int32_t number;
+    while (recordStream >> number) {
         record.push_back(number);
-        DataEntry dataEntry(Record(record), key);
-        databaseManager.writeDataToDatabase(dataEntry);
-       
     }
+
+    DataEntry dataEntry(Record(record), key);
+    databaseManager.writeDataToDatabase(dataEntry);
+}
 
 };
