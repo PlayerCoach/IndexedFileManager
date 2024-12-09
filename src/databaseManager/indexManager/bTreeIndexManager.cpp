@@ -363,6 +363,9 @@ void IndexManager::compensate(Node& node, Node& parentNode, Node& siblingNode, B
         siblingNode.insertEntry(currentRootEntry); // insert currentRootEntry to node
         siblingNode.insertChildPtr(ascendedEntryChildPtr); // insert left most ptr of right sibling to the right sibling
 
+        //update parent ptrs
+        
+
         IndexFileManager.openFileStream();
         IndexFileManager.writeBlockToFile(node.getBlockIndex(), node.serialize().get());
         IndexFileManager.writeBlockToFile(parentNode.getBlockIndex(), parentNode.serialize().get());

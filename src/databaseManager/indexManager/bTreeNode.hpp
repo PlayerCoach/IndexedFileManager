@@ -15,7 +15,7 @@ private:
 
     uint32_t order;
     uint32_t selfPtr;
-    std::optional<uint32_t> parentPtr;
+    // std::optional<uint32_t> parentPtr;
     bool isLeaf;
     bool isFull;
     uint32_t numberOfKeys;
@@ -39,7 +39,7 @@ public:
     void insertEntry(const BTreeEntry& entry);
 
     void setEntries(std::vector<BTreeEntry> entries);
-    void setParentPtr(std::optional<uint32_t> parentPtr);
+    // void setParentPtr(std::optional<uint32_t> parentPtr);
     void setIsLeaf(bool isLeaf);
     void setIsFull(bool isFull);
     void setEntryChildPtr(uint64_t key_value, uint32_t childPtr);
