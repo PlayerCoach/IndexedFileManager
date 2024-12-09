@@ -152,43 +152,46 @@ void IndexManager::splitRoot(Node& node, BTreeEntry entry)
     IndexFileManager.writeBlockToFile(leftNode.getBlockIndex(), leftNode.serialize().get());
     IndexFileManager.writeBlockToFile(rightNode.getBlockIndex(), rightNode.serialize().get());
     IndexFileManager.closeFileStream();
-
-    updateParentPtrs();
    
 }
 
 Node IndexManager::findLeafNodeForKey(uint64_t key)
 {
+    BTreeEntry wrapperForKey(key, std::nullopt, std::nullopt);
     Node currentNode = rootCache;
-    while(!currentNode.getIsLeaf())
+
+    while (!currentNode.getIsLeaf())
     {
-        BTreeEntry prevEntry = currentNode.getEntries().front();
-        if(!prevEntry.getChildPtr().has_value())
+        const auto& entries = currentNode.getEntries();
+        size_t left = 0;
+        size_t right = entries.size();
+
+        // Perform binary search to find the appropriate child pointer.
+        while (left < right)
+        {
+            size_t mid = left + (right - left) / 2;
+
+            if (entries[mid].getKey().has_value() && key < entries[mid].getKey().value())
+            {
+                right = mid;
+            }
+            else
+            {
+                left = mid + 1;
+            }
+        }
+
+        size_t childIndex = (left == 0) ? 0 : left - 1;
+        const auto& selectedEntry = entries[childIndex];
+
+        if (!selectedEntry.getChildPtr().has_value())
         {
             throw std::runtime_error("Node is not leaf, but has no child ptr");
         }
-        // if node is not leaf, then it has to have child ptr
-        for(auto entry : currentNode.getEntries())
-        {
-           if(entry.getKey().has_value())
-           {
-                if(key < entry.getKey().value())
-                {
-                    if(!prevEntry.getChildPtr().has_value())
-                    {
-                        throw std::runtime_error("Node is not leaf, but has no child ptr");
-                    }
-                    currentNode = getNode(prevEntry.getChildPtr().value());
-                    break;
-                }
-           }
-              prevEntry = entry;
-        }
-        currentNode = getNode(prevEntry.getChildPtr().value());
+
+        currentNode = getNode(selectedEntry.getChildPtr().value());
     }
-    std::cout << "Found leaf node: " << currentNode.getBlockIndex() << std::endl;
     return currentNode;
-    
 }
 
 Node IndexManager::getNode(uint32_t blockIndex)
@@ -410,28 +413,6 @@ void IndexManager::compensate(Node& node, Node& parentNode, Node& siblingNode, B
 
     }
     
-}
-
-void IndexManager::updateParentPtrs()
-{
-    std::queue<Node> q;
-    q.push(rootCache);
-    while(!q.empty())
-    {
-        Node currentNode = q.front();
-        q.pop();
-        for(auto entry : currentNode.getEntries())
-        {
-            if(entry.getChildPtr().has_value())
-            {
-                Node childNode = getNode(entry.getChildPtr().value());
-                IndexFileManager.openFileStream();
-                IndexFileManager.writeBlockToFile(childNode.getBlockIndex(), childNode.serialize().get());
-                IndexFileManager.closeFileStream();
-                q.push(childNode);
-            }
-        }
-    }
 }
 
 std::optional<Node> IndexManager::getParentNode(const Node& node)

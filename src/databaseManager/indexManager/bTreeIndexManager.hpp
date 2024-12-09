@@ -30,6 +30,7 @@ class IndexManager
     void insertToNode(Node& node, BTreeEntry entry);
     std::optional<size_t> getInsertPosition(Node& node, uint64_t key);
     Node findLeafNodeForKey(uint64_t key);
+    std::optional<uint64_t> findChildPointerForKey(const Node& node, uint64_t key);
     Node getNode(uint32_t blockIndex);
     Node createNode(bool isLeaf, uint32_t blockIndex);
     void readBTree();
@@ -39,6 +40,5 @@ class IndexManager
     std::pair<std::optional<Node>,std::optional<Node>> findSiblings(const Node& parentNode, uint32_t blockIndex);
     void compensate(Node& node, Node& parentNode, Node& siblingNode, BTreeEntry entry,  bool isLeftSibling);
     void readNode(Node& node);
-    void updateParentPtrs();
     std::optional<Node> getParentNode(const Node& node);
 };
