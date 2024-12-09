@@ -21,6 +21,7 @@ class IndexManager
     const uint32_t treeOrder = 2;
     const size_t indexPageSize = Node::size(treeOrder);
     uint32_t writeBlockIndex = 0;
+    std::vector<uint32_t> freeBlocks;
 
     public:
     IndexManager() = default;
@@ -30,6 +31,7 @@ class IndexManager
     void insertToNode(Node& node, BTreeEntry entry);
     Node findLeafNodeForKey(uint64_t key);
     Node getNode(uint32_t blockIndex);
+    void deleteNode(uint32_t blockIndex);
     Node createNode(bool isLeaf, uint32_t blockIndex);
     void readBTree();
     void split(Node& node, BTreeEntry entry);
@@ -49,4 +51,5 @@ class IndexManager
         std::pair<std::optional<BTreeEntry>, std::optional<Node>> findMinElementFromRightSubtree(Node& node);
     bool checkIfCanCompensateAfterDeletion(Node& node, uint64_t key);
     void compensateAfterDeletion(Node& node, Node& parentNode, Node& siblingNode, uint64_t key,  bool isLeftSibling);
+    void merge(Node& node, uint64_t key);
 };
