@@ -99,6 +99,7 @@ void IndexManager::split(Node& node, BTreeEntry entry)
     node.insertEntry(entry);
     BTreeEntry ascendedEntry = node.retrieveMedianKeyEntry();
     std::pair<std::vector<BTreeEntry>, std::vector<BTreeEntry>> splitEntries = node.splitNode(); // split cleans the node
+    node.setIsLeaf(node.getIsLeaf());
 
     rightNode.setEntries(splitEntries.second);
     rightNode.insertChildPtr(ascendedEntry.getChildPtr());
@@ -571,10 +572,11 @@ void IndexManager::deleteKeyFromLeaf(Node& node, uint64_t key)
     }
     else
     {
-        // if(!checkIfCanCompensateAfterDeletion(node))
-        // {
-        //     throw std::runtime_error("Merge not implemented yet");
-        // }
+        if(checkIfCanCompensateAfterDeletion(node, key))
+        {
+            //this->deleteKeyFromLeaf(node, key);
+            return;
+        }
         throw std::runtime_error("Merge not implemented yet");
     }
 }
@@ -626,3 +628,119 @@ std::pair<std::optional<BTreeEntry>, std::optional<Node>> IndexManager::findMinE
     return std::make_pair(minEntry, currentNode);
 
 }
+
+bool IndexManager::checkIfCanCompensateAfterDeletion(Node& node, uint64_t key)
+{
+    if(!this->getParentNode(node).has_value())
+    {
+        return false;
+    }
+
+    Node parentNode = this->getParentNode(node).value();
+    size_t index = -1;
+
+    std::pair<std::optional<Node>,std::optional<Node>> siblings = findSiblings(parentNode, node.getBlockIndex());
+    if(siblings.first.has_value())
+    {
+        if(siblings.first.value().getNumberOfKeys() > treeOrder)
+        {
+            bool isLeftSibling = true;
+            compensateAfterDeletion(node,parentNode, siblings.first.value(),  key, isLeftSibling);
+            return true;
+        }
+    }
+
+    if(siblings.second.has_value())
+    {
+        if(siblings.second.value().getNumberOfKeys() > treeOrder)
+        {
+            bool isLeftSibling = false;
+            compensateAfterDeletion(node, parentNode, siblings.second.value(), key, isLeftSibling);
+            return true;
+        }
+    }
+
+    return false;
+ 
+}
+
+void IndexManager::compensateAfterDeletion(Node& node, Node& parentNode, Node& siblingNode, uint64_t key,  bool hasLeftSibling)
+{
+    //this is leaf node for sure so , i dont have to copy child ptrs
+    size_t index = -1;
+        for(size_t i = 0; i < parentNode.getEntries().size(); i++)
+        {
+            if(parentNode.getEntries()[i].getChildPtr().value() == node.getBlockIndex())
+            {
+                index = i;
+                break;
+            }
+        }
+    
+    if(!hasLeftSibling)
+    {
+        index++; // its right slibing so i want to rotate with entry that has address of right sibling
+        BTreeEntry currentRootEntry = parentNode.getEntries()[index]; // if this is right sibling, then its 100% node with key
+
+        BTreeEntry entryToAscend = siblingNode.popLeftMostEntryWithKey(); // this will become new root entry,
+
+        entryToAscend.setChildPtr(currentRootEntry.getChildPtr());
+        parentNode.deleteEntryAtIndex(index); // delete currentRootEntry from parent
+        parentNode.insertEntry(entryToAscend); // insert new root entry to parent
+        currentRootEntry.setChildPtr(std::nullopt);
+        node.insertEntry(currentRootEntry); // insert currentRootEntry to node
+        node.deleteEntryWithKey(key); // delete key from node
+
+        //update parent ptrs
+
+        IndexFileManager.openFileStream();
+        IndexFileManager.writeBlockToFile(node.getBlockIndex(), node.serialize().get());
+        IndexFileManager.writeBlockToFile(parentNode.getBlockIndex(), parentNode.serialize().get());
+        IndexFileManager.writeBlockToFile(siblingNode.getBlockIndex(), siblingNode.serialize().get());
+        IndexFileManager.closeFileStream();
+
+        if(parentNode.getBlockIndex() == 0)
+        {
+            rootCache = parentNode;
+        }
+    }
+
+    else
+    {
+        BTreeEntry currentRootEntry = parentNode.getEntries()[index];
+        if(currentRootEntry.getKey().has_value())
+        {
+            // if this is most left entry, then what???
+        }
+        
+        BTreeEntry entryToAscend = siblingNode.popRightMostEntryWithKey(); // this will become new root entry,
+
+        entryToAscend.setChildPtr(currentRootEntry.getChildPtr());
+
+        parentNode.deleteEntryAtIndex(index); // delete currentRootEntry from parent
+        parentNode.insertEntry(entryToAscend); // insert new root entry to parent
+
+        currentRootEntry.setChildPtr(std::nullopt);
+        node.insertEntry(currentRootEntry); // insert currentRootEntry to sibling
+        node.deleteEntryWithKey(key); // delete key from node
+
+        IndexFileManager.openFileStream();
+        IndexFileManager.writeBlockToFile(node.getBlockIndex(), node.serialize().get());
+        IndexFileManager.writeBlockToFile(parentNode.getBlockIndex(), parentNode.serialize().get());
+        IndexFileManager.writeBlockToFile(siblingNode.getBlockIndex(), siblingNode.serialize().get());
+        IndexFileManager.closeFileStream();
+
+        if(parentNode.getBlockIndex() == 0)
+        {
+            rootCache = parentNode;
+        }
+    }
+
+}
+
+
+        
+       
+
+     
+

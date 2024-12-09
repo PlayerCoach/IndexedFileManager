@@ -47,6 +47,6 @@ class IndexManager
     void deleteKeyFromLeaf(Node& node, uint64_t key);
         std::pair<std::optional<BTreeEntry>, std::optional<Node>> findMaxElementFromLeftSubtree(Node& node);
         std::pair<std::optional<BTreeEntry>, std::optional<Node>> findMinElementFromRightSubtree(Node& node);
-    //bool checkIfCanCompensateAfterDeletion(Node& node);
-    //void compensateAfterDeletion(Node& node, Node& parentNode, Node& siblingNode, BTreeEntry entry, bool isLeftSibling);
+    bool checkIfCanCompensateAfterDeletion(Node& node, uint64_t key);
+    void compensateAfterDeletion(Node& node, Node& parentNode, Node& siblingNode, uint64_t key,  bool isLeftSibling);
 };
