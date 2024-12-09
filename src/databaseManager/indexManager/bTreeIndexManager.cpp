@@ -244,11 +244,11 @@ void IndexManager::readNode(Node& node)
    {
     if(entry.getKey().has_value())
     {
-        std::cout << "Key: " << entry.getKey().value() << " DataBlockPtr: " << entry.getDataBlockPtr().value() << std::endl;
+        std::cout << "Key: " << entry.getKey().value() << " | ";
     }
     if(entry.getChildPtr().has_value())
     {
-        std::cout << "ChildPtr: " << entry.getChildPtr().value() << std::endl;
+        std::cout << "ChildPtr: " << entry.getChildPtr().value() << " | ";
     }
        
    }
@@ -383,10 +383,6 @@ void IndexManager::compensate(Node& node, Node& parentNode, Node& siblingNode, B
     else
     {
         BTreeEntry currentRootEntry = parentNode.getEntries()[index];
-        if(currentRootEntry.getKey().has_value())
-        {
-            // if this is most left entry, then what???
-        }
         
         node.insertEntry(entry); // temporary overflow
         BTreeEntry entryToAscend = node.popLeftMostEntryWithKey(); // this will become new root entry,
@@ -539,7 +535,7 @@ void IndexManager::deleteKey(Node& node, uint64_t key)
             {
                 rootCache = node;
             }
-            this->deleteKey(maxElementFromLeftSubtree.second.value(), maxEntry.getKey().value());
+            this->deleteKeyFromLeaf(maxElementFromLeftSubtree.second.value(), maxEntry.getKey().value());
             return;
         }
 
@@ -558,7 +554,7 @@ void IndexManager::deleteKey(Node& node, uint64_t key)
             {
                 rootCache = node;
             }
-            this->deleteKey(minElementFromRightSubtree.second.value(), minEntry.getKey().value());
+            this->deleteKeyFromLeaf(minElementFromRightSubtree.second.value(), minEntry.getKey().value());
             return;
         }
     }
@@ -674,7 +670,8 @@ bool IndexManager::checkIfCanCompensateAfterDeletion(Node& node, uint64_t key)
 
 void IndexManager::compensateAfterDeletion(Node& node, Node& parentNode, Node& siblingNode, uint64_t key,  bool hasLeftSibling)
 {
-    //this is leaf node for sure so , i dont have to copy child ptrs
+    //CHANGE THIS FUNCTION 
+    //THIS IS NOT LEAF NODE FOR SURE
     size_t index = -1;
         for(size_t i = 0; i < parentNode.getEntries().size(); i++)
         {
@@ -692,10 +689,18 @@ void IndexManager::compensateAfterDeletion(Node& node, Node& parentNode, Node& s
 
         BTreeEntry entryToAscend = siblingNode.popLeftMostEntryWithKey(); // this will become new root entry,
 
+        std::optional<uint32_t> ascendedEntryChildPtr = entryToAscend.getChildPtr();
         entryToAscend.setChildPtr(currentRootEntry.getChildPtr());
         parentNode.deleteEntryAtIndex(index); // delete currentRootEntry from parent
         parentNode.insertEntry(entryToAscend); // insert new root entry to parent
-        currentRootEntry.setChildPtr(std::nullopt);
+
+        std::optional<BTreeEntry> leftMostPtrOfRightSibling = siblingNode.popEntryWithoutKey();
+        if(leftMostPtrOfRightSibling.has_value())
+            currentRootEntry.setChildPtr(leftMostPtrOfRightSibling.value().getChildPtr());
+        else
+            currentRootEntry.setChildPtr(std::nullopt);
+       
+       
         node.insertEntry(currentRootEntry); // insert currentRootEntry to node
         node.deleteEntryWithKey(key); // delete key from node
 
@@ -716,19 +721,22 @@ void IndexManager::compensateAfterDeletion(Node& node, Node& parentNode, Node& s
     else
     {
         BTreeEntry currentRootEntry = parentNode.getEntries()[index];
-        if(currentRootEntry.getKey().has_value())
-        {
-            // if this is most left entry, then what???
-        }
         
         BTreeEntry entryToAscend = siblingNode.popRightMostEntryWithKey(); // this will become new root entry,
 
+        std::optional<uint32_t> ascendedEntryChildPtr = entryToAscend.getChildPtr();
         entryToAscend.setChildPtr(currentRootEntry.getChildPtr());
 
         parentNode.deleteEntryAtIndex(index); // delete currentRootEntry from parent
         parentNode.insertEntry(entryToAscend); // insert new root entry to parent
 
-        currentRootEntry.setChildPtr(std::nullopt);
+        std::optional<BTreeEntry> leftMostPtrOfNode = siblingNode.popEntryWithoutKey();
+
+        if(leftMostPtrOfNode.has_value())
+            currentRootEntry.setChildPtr(leftMostPtrOfNode.value().getChildPtr());
+        else
+            currentRootEntry.setChildPtr(std::nullopt);
+
         node.insertEntry(currentRootEntry); // insert currentRootEntry to sibling
         node.deleteEntryWithKey(key); // delete key from node
 
@@ -772,7 +780,7 @@ void IndexManager::merge(Node& node, uint64_t key)
         std::optional<BTreeEntry> childPtr = rightSibling.popEntryWithoutKey();
         std::vector<BTreeEntry> rightSiblingEntries = rightSibling.getEntries();
         BTreeEntry entryToDescend = parentNode.getEntries()[index + 1]; // this is entry with key
-        parentNode.setEntryChildPtr(entryToDescend.getKey().value(), std::nullopt);
+        parentNode.setEntryChildPtr(entryToDescend.getKey().value(), std::nullopt); // so it can you use it as child ptr
         if(childPtr.has_value())
             entryToDescend.setChildPtr(childPtr.value().getChildPtr());
         else
@@ -816,7 +824,7 @@ void IndexManager::merge(Node& node, uint64_t key)
         IndexFileManager.writeBlockToFile(parentNode.getBlockIndex(), parentNode.serialize().get());
         IndexFileManager.closeFileStream();
 
-        this->deleteKey(parentNode, entryToDescend.getKey().value());
+        this->deleteKeyFromLeaf(parentNode, entryToDescend.getKey().value());
    
     }
 
@@ -872,7 +880,7 @@ void IndexManager::merge(Node& node, uint64_t key)
         IndexFileManager.writeBlockToFile(parentNode.getBlockIndex(), parentNode.serialize().get());
         IndexFileManager.closeFileStream();
 
-        this->deleteKey(parentNode, entryToDescend.getKey().value());
+        this->deleteKeyFromLeaf(parentNode, entryToDescend.getKey().value());
 
 
 
