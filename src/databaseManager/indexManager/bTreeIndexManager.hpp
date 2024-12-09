@@ -39,4 +39,5 @@ class IndexManager
     std::pair<std::optional<Node>,std::optional<Node>> findSiblings(const Node& parentNode, uint32_t blockIndex);
     void compensate(Node& node, Node& parentNode, Node& siblingNode, BTreeEntry entry,  bool isLeftSibling);
     void readNode(Node& node);
+    void updateParentPtrs();
 };

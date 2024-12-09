@@ -155,6 +155,8 @@ void IndexManager::splitRoot(Node& node, BTreeEntry entry)
     IndexFileManager.writeBlockToFile(leftNode.getBlockIndex(), leftNode.serialize().get());
     IndexFileManager.writeBlockToFile(rightNode.getBlockIndex(), rightNode.serialize().get());
     IndexFileManager.closeFileStream();
+
+    updateParentPtrs();
    
 }
 
@@ -417,4 +419,27 @@ void IndexManager::compensate(Node& node, Node& parentNode, Node& siblingNode, B
 
     }
     
+}
+
+void IndexManager::updateParentPtrs()
+{
+    std::queue<Node> q;
+    q.push(rootCache);
+    while(!q.empty())
+    {
+        Node currentNode = q.front();
+        q.pop();
+        for(auto entry : currentNode.getEntries())
+        {
+            if(entry.getChildPtr().has_value())
+            {
+                Node childNode = getNode(entry.getChildPtr().value());
+                childNode.setParentPtr(currentNode.getBlockIndex());
+                IndexFileManager.openFileStream();
+                IndexFileManager.writeBlockToFile(childNode.getBlockIndex(), childNode.serialize().get());
+                IndexFileManager.closeFileStream();
+                q.push(childNode);
+            }
+        }
+    }
 }
