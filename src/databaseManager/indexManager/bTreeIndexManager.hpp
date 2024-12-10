@@ -19,10 +19,11 @@ class IndexManager
     std::string indexFilePath;
     Node rootCache;
     FileManager IndexFileManager;
-    const uint32_t treeOrder = 2;
+    const uint32_t treeOrder = 3;
     const size_t indexPageSize = Node::size(treeOrder);
     uint32_t writeBlockIndex = 0;
     std::vector<uint32_t> freeBlocks;
+    int numberOfKeysInTree = 0;
 
     int treeHeight = 0;
     size_t cacheSize = treeHeight + 1;
@@ -93,6 +94,8 @@ class IndexManager
     /* CACHE LOGIC */
     void updateCache(Node& node);
     std::optional<Node> getFromCache(uint32_t blockIndex);
+
+    void saveStatisticsToFile();
    
    
 

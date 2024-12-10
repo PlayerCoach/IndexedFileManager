@@ -324,6 +324,8 @@ std::string IndexManager::insertPreparation(DataEntry DataEntry, uint32_t databa
     }
 
     this->insertToLeaf(NodeAndFoundKeyPair.first.value(),entry);
+    this->numberOfKeysInTree++;
+    this->saveStatisticsToFile();
     return "Key inserted";
 
 }
@@ -479,6 +481,7 @@ std::optional<uint32_t> IndexManager::deleteKeyPreparation(uint64_t key)
     Node node = nodeAndCheckIfKeyExistsPair.first.value();
     uint32_t blockPtr = node.getEntryWithKey(key).value().getDataBlockPtr().value();
     this->deleteKey(node, key);
+    this->numberOfKeysInTree--;
     return blockPtr;
 }
 
@@ -806,7 +809,7 @@ void IndexManager::updateCache(Node& node)
         cacheMap[blockIndex] = cacheList.begin();
     }
 
-    std::optional<Node> IndexManager::getFromCache(uint32_t blockIndex) {
+std::optional<Node> IndexManager::getFromCache(uint32_t blockIndex) {
         if(blockIndex == 0)
         {
             return rootCache;
@@ -814,8 +817,8 @@ void IndexManager::updateCache(Node& node)
         }
 
         if (cacheMap.find(blockIndex) == cacheMap.end()) {
-            return std::nullopt; // Cache miss
             cacheMisses++;
+            return std::nullopt; // Cache miss
         }
         // Move the accessed node to the front of the list
         auto it = cacheMap[blockIndex];
@@ -827,3 +830,27 @@ void IndexManager::updateCache(Node& node)
 
         return node;
     }
+
+
+
+void IndexManager::saveStatisticsToFile()
+{
+    std::ofstream file("statistics.txt", std::ios::app); // Open in append mode
+    double hitRatio = (double)cacheHits / (cacheHits + cacheMisses);
+    int totalIO = readNumber + writeNumber;
+    std::string statistics = "CurrentNumberOfKeys: " + std::to_string(numberOfKeysInTree) +
+                             " | TreeHeight: " + std::to_string(treeHeight) +
+                             " | CacheHits: " + std::to_string(cacheHits) +
+                             " | CacheMisses: " + std::to_string(cacheMisses) +
+                             " | CacheHitRatio: " + std::to_string(hitRatio) +
+                             " | ReadNumber: " + std::to_string(readNumber) +
+                             " | WriteNumber: " + std::to_string(writeNumber) + 
+                             " | TotalIO: " + std::to_string(totalIO) + "\n";
+    file << statistics;
+    file.close();
+    this->cacheHits = 0;
+    this->cacheMisses = 0;
+    this->readNumber = 0;
+    this->writeNumber = 0;
+
+}

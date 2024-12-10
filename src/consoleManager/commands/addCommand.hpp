@@ -112,9 +112,9 @@ class AddCommand : public Command {
               result = databaseManager.writeDataToDatabase(dataEntry);
               if(result != "")
               {
-                  std::cout << result << std::endl;
+                // std::cout << result << std::endl;
               }
-                
+
        }
        
     }

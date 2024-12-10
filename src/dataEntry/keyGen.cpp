@@ -1,6 +1,6 @@
 #include "keyGen.hpp"
 
-KeyGen::KeyGen() : gen(std::random_device{}()), dist(0, 100) {} //UINT64_MAX
+KeyGen::KeyGen() : gen(std::random_device{}()), dist(0, UINT64_MAX) {} //UINT64_MAX
 
 int64_t KeyGen::generateKey()
 {
