@@ -26,6 +26,8 @@ class IndexManager
     int treeHeight = 0;
     size_t cacheSize = treeHeight + 1;
     std::unordered_map<uint32_t, Node> cache;
+    int cacheHits = 0;
+    int cacheMisses = 0;
 
     public:
     IndexManager() = default;
@@ -49,9 +51,13 @@ class IndexManager
 
     std::string deleteKeyPreparation(uint64_t key);
     void deleteKey(Node& node, uint64_t key);
-    void deleteKeyFromLeaf(Node& node, uint64_t key);
-        std::pair<std::optional<BTreeEntry>, std::optional<Node>> findMaxElementFromLeftSubtree(Node& node);
-        std::pair<std::optional<BTreeEntry>, std::optional<Node>> findMinElementFromRightSubtree(Node& node);
+        bool handleMaxElementFromLeftSubtree(Node& node, uint64_t key);
+        bool handleMinElementFromRightSubtree(Node& node, uint64_t key);
+    std::pair<std::optional<BTreeEntry>, std::optional<Node>> findMaxElementFromLeftSubtree(Node& node);
+    std::pair<std::optional<BTreeEntry>, std::optional<Node>> findMinElementFromRightSubtree(Node& node);
+    
+    void handleKeyRemoval(Node& node, uint64_t key);
+
     bool checkIfCanCompensateAfterDeletion(Node& node, uint64_t key);
 
     void merge(Node& node, uint64_t key);
