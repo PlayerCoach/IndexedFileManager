@@ -1,14 +1,14 @@
 #include "bTreeNode.hpp"
 
-Node::Node(uint32_t order, uint32_t selfPtr, bool isLeaf)
-    : order(order), selfPtr(selfPtr), isLeaf(isLeaf), isFull(false), numberOfKeys(0) 
+Node::Node(uint32_t order, uint32_t selfPtr)
+    : order(order), selfPtr(selfPtr), numberOfKeys(0) 
 {  
     entries.reserve(2 * order + 1);
 }
 
 
-Node::Node(uint32_t order, uint32_t selfPtr, bool isLeaf, bool isFull, std::vector<BTreeEntry> entries)
-    : order(order), selfPtr(selfPtr), isLeaf(isLeaf), isFull(isFull), numberOfKeys(0), entries(entries) 
+Node::Node(uint32_t order, uint32_t selfPtr, std::vector<BTreeEntry> entries)
+    : order(order), selfPtr(selfPtr), numberOfKeys(0), entries(entries) 
 {
     countKeys();
 }
@@ -33,7 +33,7 @@ void Node::countKeys()
 
 void Node::clearNode() 
 {
-    *this = Node(order, selfPtr, false);
+    *this = Node(order, selfPtr);
     
 }
 
@@ -50,8 +50,6 @@ void Node::insertKey(uint64_t key, uint32_t dataBlockPtr)
     entries.insert(position, BTreeEntry(key, dataBlockPtr, std::nullopt));
     numberOfKeys++;
 
-    if (numberOfKeys == 2 * order) 
-        isFull = true;
 }
 
 void Node::insertChildPtr(std::optional<uint32_t> childPtr) 
@@ -67,17 +65,11 @@ void Node::insertChildPtr(std::optional<uint32_t> childPtr)
 
 void Node::insertEntry(const BTreeEntry& entry) 
 {
-    // if(this->entries.size() == 2 * order + 1) <-- user should check if node is full
-    //     throw std::runtime_error("Node is full");
-
     auto position = std::lower_bound(entries.begin(), entries.end(), entry);
     entries.insert(position, entry);
 
     if (entry.getKey().has_value())
         numberOfKeys++;
-
-    if (numberOfKeys == 2 * order) 
-        isFull = true;
 }
 
 
@@ -85,16 +77,6 @@ void Node::setEntries(std::vector<BTreeEntry> entries)
 {
     this->entries = entries;
     countKeys();
-}
-
-void Node::setIsLeaf(bool isLeaf) 
-{
-    this->isLeaf = isLeaf;
-}
-
-void Node::setIsFull(bool isFull) 
-{
-    this->isFull = isFull;
 }
 
 void Node::setEntryChildPtr(uint64_t key_value, std::optional<uint32_t> childPtr) 
@@ -125,8 +107,6 @@ void Node::deleteEntryAtIndex(size_t index)
 
     entries.erase(entries.begin() + index);
 
-    if (numberOfKeys < 2 * order) 
-        isFull = false;
 }
 
 void Node::deleteEntryWithKey(uint64_t key) 
@@ -141,9 +121,6 @@ void Node::deleteEntryWithKey(uint64_t key)
                 numberOfKeys--;
 
             entries.erase(entry);
-
-            if (numberOfKeys < 2 * order) 
-                isFull = false;
 
             return;
         }
@@ -171,9 +148,6 @@ BTreeEntry Node::popLeftMostEntryWithKey()
         
     numberOfKeys--;
 
-    if (numberOfKeys < 2 * order) 
-        isFull = false;
-
     return entry;
 }
 
@@ -189,9 +163,6 @@ BTreeEntry Node::popRightMostEntryWithKey()
         numberOfKeys--;
     else 
         throw std::runtime_error("Entry without key");
-
-    if (numberOfKeys < 2 * order) 
-        isFull = false;
 
     return entry;
 }
@@ -241,12 +212,18 @@ std::optional<BTreeEntry> Node::popEntryWithoutKey()
 
 bool Node::getIsLeaf() const 
 {
-    return isLeaf;
+    for(const auto& entry : entries) 
+    {
+        if(entry.getChildPtr().has_value()) 
+            return false;
+    }
+
+    return true;
 }
 
 bool Node::getIsFull() const 
 {
-    return isFull;
+    return numberOfKeys >= 2 * order;
 }
 
 uint32_t Node::getBlockIndex() const 
@@ -281,7 +258,7 @@ std::optional<BTreeEntry> Node::getEntryWithKey(uint64_t key) const
 
 std::pair<std::vector<BTreeEntry>, std::vector<BTreeEntry>> Node::splitNode() 
 {
-    if(!isFull) 
+    if(!this->getIsFull()) 
         throw std::runtime_error("Node is not full");
 
     size_t middle = entries.size() / 2;
@@ -302,8 +279,6 @@ size_t Node::size(int order)
     size_t size = 0;
 
     size += sizeof(uint32_t); // selfPtr
-    size += sizeof(bool); // isFull
-    size += sizeof(bool); // isLeaf
     size += (2 * order + 1) * BTreeEntry::size();
     
     return size;
@@ -317,12 +292,6 @@ std::unique_ptr<char[]> Node::serialize() const
 
     memcpy(ptr, &selfPtr, sizeof(uint32_t));
     ptr += sizeof(uint32_t);
-
-    memcpy(ptr, &isFull, sizeof(bool));
-    ptr += sizeof(bool);
-
-    memcpy(ptr, &isLeaf, sizeof(bool));
-    ptr += sizeof(bool);
 
     // serialize non empty entires
     size_t writtenEntries = 0;
@@ -357,12 +326,6 @@ std::optional<Node> Node::deserialize(char* data, uint32_t order)
     uint32_t selfPtr = *reinterpret_cast<int32_t*>(ptr);
     ptr += sizeof(uint32_t);
 
-    bool isFull = *reinterpret_cast<bool*>(ptr);
-    ptr += sizeof(bool);
-
-    bool isLeaf = *reinterpret_cast<bool*>(ptr);
-    ptr += sizeof(bool);
-
     // Deserialize entries
     std::vector<BTreeEntry> entries;
 
@@ -379,6 +342,6 @@ std::optional<Node> Node::deserialize(char* data, uint32_t order)
         ptr += BTreeEntry::size();
     }
 
-    return Node(order, selfPtr, isLeaf, isFull, entries);
+    return Node(order, selfPtr, entries);
 }
 

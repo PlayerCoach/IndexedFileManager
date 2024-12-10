@@ -8,7 +8,7 @@ IndexManager::IndexManager(std::string indexFilePath)
     IndexFileManager.openFileStream();
     if (IndexFileManager.checkIfFileIsEmpty())
     {
-        Node root(treeOrder, 0, true);
+        Node root(treeOrder, 0);
         IndexFileManager.writeBlockToFile(this->writeBlockIndex, root.serialize().get());
         this->writeBlockIndex++;
         rootCache = root;
@@ -99,18 +99,15 @@ void IndexManager::split(Node& node, BTreeEntry entry)
     node.insertEntry(entry);
     BTreeEntry ascendedEntry = node.retrieveMedianKeyEntry();
     std::pair<std::vector<BTreeEntry>, std::vector<BTreeEntry>> splitEntries = node.splitNode(); // split cleans the node
-    node.setIsLeaf(rightNode.getIsLeaf());
 
     rightNode.setEntries(splitEntries.second);
     rightNode.insertChildPtr(ascendedEntry.getChildPtr());
     
-    rightNode.setIsFull(false);
 
     //insert ptr to right node to the ascended entry
     ascendedEntry.setChildPtr(rightNode.getBlockIndex());
 
     node.setEntries(splitEntries.first);
-    node.setIsFull(false);
     IndexFileManager.openFileStream();
     IndexFileManager.writeBlockToFile(node.getBlockIndex(), node.serialize().get());
     IndexFileManager.writeBlockToFile(rightNode.getBlockIndex(), rightNode.serialize().get());
@@ -133,10 +130,8 @@ void IndexManager::splitRoot(Node& node, BTreeEntry entry)
 
     std::pair<std::vector<BTreeEntry>, std::vector<BTreeEntry>> splitEntries = node.splitNode(); // split cleans the node
     leftNode.setEntries(splitEntries.first);
-    leftNode.setIsFull(false);
 
     rightNode.setEntries(splitEntries.second);
-    rightNode.setIsFull(false);
     
     //insert old ptr of ascended node to the most left  of the right node
     rightNode.insertChildPtr(ascendedEntry.getChildPtr());
@@ -210,7 +205,7 @@ void IndexManager::deleteNode(uint32_t blockIndex)
 
 Node IndexManager::createNode(bool isLeaf, uint32_t blockIndex)
 {
-    return Node(treeOrder, blockIndex, isLeaf);
+    return Node(treeOrder, blockIndex);
 }
 
 void IndexManager::readBTree()
@@ -383,7 +378,7 @@ void IndexManager::compensate(Node& node, Node& parentNode, Node& siblingNode, B
     else
     {
         BTreeEntry currentRootEntry = parentNode.getEntries()[index];
-        
+
         node.insertEntry(entry); // temporary overflow
         BTreeEntry entryToAscend = node.popLeftMostEntryWithKey(); // this will become new root entry,
 
@@ -798,7 +793,6 @@ void IndexManager::merge(Node& node, uint64_t key)
         if(parentNode.getBlockIndex() == 0 && parentNode.getNumberOfKeys() == 1)
         {
             node.setSelfPtr(0);
-            node.setIsLeaf(true);
             IndexFileManager.openFileStream();
             IndexFileManager.writeBlockToFile(0, node.serialize().get()); // root is now leaf
             IndexFileManager.closeFileStream();
@@ -855,7 +849,6 @@ void IndexManager::merge(Node& node, uint64_t key)
         if(parentNode.getBlockIndex() == 0 && parentNode.getNumberOfKeys() == 1)
         {
             leftSibling.setSelfPtr(0);
-            leftSibling.setIsLeaf(true);
             IndexFileManager.openFileStream();
             IndexFileManager.writeBlockToFile(0, leftSibling.serialize().get()); // root is now leaf
             IndexFileManager.closeFileStream();
