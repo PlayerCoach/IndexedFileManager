@@ -46,6 +46,7 @@ class DatabaseManager
     std::unique_ptr<char[]> serializeDataBlock(std::vector<DataEntry>& dataEntries);
     void readAllDataFromDatabase();
     void readBTree();
+    void getFilesProportions();
 
 
    

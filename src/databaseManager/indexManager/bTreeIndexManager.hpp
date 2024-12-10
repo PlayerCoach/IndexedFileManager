@@ -96,6 +96,11 @@ class IndexManager
     std::optional<Node> getFromCache(uint32_t blockIndex);
 
     void saveStatisticsToFile();
+    void printStatistic();
+
+    size_t getNumberOfPages();
+    int getNumberOfKeysInTree();
+    size_t getSizeOfPage();
    
    
 

@@ -208,3 +208,12 @@ void DatabaseManager::readBTree()
     this->indexManager->readBTree();
 }
 
+void DatabaseManager::getFilesProportions()
+{
+    int numberOfRecords = this->indexManager->getNumberOfKeysInTree();
+    int totalSizeofrecords = numberOfRecords * DataEntry::Size();
+    int numberOfPages = this->indexManager->getNumberOfPages();
+    int totalSizeOfDatabase = numberOfPages * this->databasePageSize;
+
+    std::cout << "Space Used by Database: " << totalSizeOfDatabase << " bytes" << std::endl;
+}

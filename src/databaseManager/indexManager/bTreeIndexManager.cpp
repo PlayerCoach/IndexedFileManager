@@ -325,7 +325,7 @@ std::string IndexManager::insertPreparation(DataEntry DataEntry, uint32_t databa
 
     this->insertToLeaf(NodeAndFoundKeyPair.first.value(),entry);
     this->numberOfKeysInTree++;
-    this->saveStatisticsToFile();
+    this->printStatistic();
     return "Key inserted";
 
 }
@@ -482,6 +482,7 @@ std::optional<uint32_t> IndexManager::deleteKeyPreparation(uint64_t key)
     uint32_t blockPtr = node.getEntryWithKey(key).value().getDataBlockPtr().value();
     this->deleteKey(node, key);
     this->numberOfKeysInTree--;
+    this->printStatistic();
     return blockPtr;
 }
 
@@ -757,6 +758,7 @@ void IndexManager::updateTreeAfterMerge(Node& target, Node& parentNode, BTreeEnt
 std::optional<uint32_t> IndexManager::search(uint64_t key)
 {
     std::pair<std::optional<Node>, bool> nodeAndCheckIfKeyExistsPair = getNodeForKey(key);
+    this->printStatistic();
     if(!nodeAndCheckIfKeyExistsPair.first.has_value() || !nodeAndCheckIfKeyExistsPair.second)
     {
         return std::nullopt;
@@ -853,4 +855,31 @@ void IndexManager::saveStatisticsToFile()
     this->readNumber = 0;
     this->writeNumber = 0;
 
+}
+
+void IndexManager::printStatistic()
+{
+    int totalIO = readNumber + writeNumber;
+    std::cout << "Number of Reads: " << readNumber << std::endl;
+    std::cout << "Number of Writes: " << writeNumber << std::endl;
+    std::cout << "Total IO: " << totalIO << std::endl;
+    this->cacheHits = 0;
+    this->cacheMisses = 0;
+    this->readNumber = 0;
+    this->writeNumber = 0;
+}
+
+size_t IndexManager::getNumberOfPages()
+{
+   return this->IndexFileManager.getIndexOfLastBlock();
+}
+
+int IndexManager::getNumberOfKeysInTree()
+{
+    return this->numberOfKeysInTree;
+}
+
+size_t IndexManager::getSizeOfPage()
+{
+    return this->indexPageSize;
 }
