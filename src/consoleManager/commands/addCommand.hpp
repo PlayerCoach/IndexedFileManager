@@ -13,6 +13,7 @@ class AddCommand : public Command {
     const std::string RANDOM_FLAG = "-r";
     const std::string USER_FLAG = "-u";
     DatabaseManager& databaseManager = DatabaseManager::getInstance();
+    bool shortFormInput = false;
 
     int count = 0;
 
@@ -29,6 +30,10 @@ class AddCommand : public Command {
     void execute(std::vector<std::string> tokens) override
     {
         this->setCount(tokens);
+        if(shortFormInput)
+        {
+            return;
+        }
         
         if(!this->setFlags(tokens)) return;
 
@@ -80,40 +85,86 @@ class AddCommand : public Command {
             return;
         }
         tokens.erase(tokens.begin());
+
+        if(tokens.size() == 0)
+        {
+            std::string result;
+            uint64_t key = this->count;
+            Record record("random");
+            DataEntry dataEntry(record, key);
+            result = databaseManager.writeDataToDatabase(dataEntry);
+            if(result != "")
+            {
+                std::cout << result << std::endl;
+            }
+            shortFormInput = true;
+            return;
+        }
         return;
     }
 
     void addRandomData(int count)
     {
-       static uint64_t key = 0;
-       Record record("random");
-       DataEntry dataEntry(record, key);
-       key++;
-       std::cout  << dataEntry << std::endl;
-       databaseManager.writeDataToDatabase(dataEntry);
-       //databaseManager.readDataFromDatabase(0);
+       for(int i = 0; i < count; i++)
+       {
+              DataEntry dataEntry;
+              std::string result;
+              result = databaseManager.writeDataToDatabase(dataEntry);
+              if(result != "")
+              {
+                  std::cout << result << std::endl;
+              }
+       }
        
     }
 
     void addUserData(int count)
 {
-    std::cout << "Enter Key: ";
-    std::string keyInput;
-    std::getline(std::cin, keyInput);
-    uint64_t key = std::stoull(keyInput); // Convert string to uint64_t
+    for(int i = 0; i < count; i++)
+    {
+        std::cout << "Enter Key: ";
+        std::string keyInput;
+        std::getline(std::cin, keyInput);
 
-    std::cout << "Enter record (space-separated integers): ";
-    std::string recordInput;
-    std::getline(std::cin, recordInput);
-    std::istringstream recordStream(recordInput);
-    std::vector<int32_t> record;
-    int32_t number;
-    while (recordStream >> number) {
-        record.push_back(number);
-    }
+        uint64_t key;
 
-    DataEntry dataEntry(Record(record), key);
-    databaseManager.writeDataToDatabase(dataEntry);
+        try
+        {
+            key = std::stoull(keyInput); // Convert string to uint64_t
+        }
+        catch(const std::invalid_argument& e)
+        {
+            std::cerr << e.what() << '\n';
+            return;
+        }
+        
+        std::cout << "Enter record (space-separated integers): ";
+        std::string recordInput;
+        std::getline(std::cin, recordInput);
+        std::istringstream recordStream(recordInput);
+        std::vector<int32_t> record;
+        int32_t number;
+        while (recordStream >> number) 
+        {
+            record.push_back(number);
+        }
+        if(record.size() == 0)
+        {
+            Record record("random");
+        }
+        else
+        {
+            Record record(record);
+        }
+
+        DataEntry dataEntry(record, key);
+        std::string result;
+        result = databaseManager.writeDataToDatabase(dataEntry);
+        if(result != "")
+        {
+            std::cout << result << std::endl;
+        }
+}
 }
 
 };

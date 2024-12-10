@@ -27,7 +27,7 @@ DataEntry::DataEntry(const Record& record, uint64_t key, bool skipCheck)
 
 // Constructor for user input (with key check)
 DataEntry::DataEntry(const Record& record, uint64_t key)
-    : DataEntry(record, key, false) // Call the other constructor with skipCheck = false
+    : DataEntry(record, key, true) // Call the other constructor with skipCheck = false
 {
 }
 
