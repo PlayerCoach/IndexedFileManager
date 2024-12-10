@@ -30,7 +30,7 @@ public:
     const KeyGen& getKeyGen() const;
     std::unique_ptr<char[]> serialize() const;
     static std::optional<DataEntry> deserialize(char* data);
-    static const int32_t Size();
+    static const size_t Size();
 
 };
 

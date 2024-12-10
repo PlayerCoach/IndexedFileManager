@@ -78,7 +78,7 @@ std::optional<DataEntry> DataEntry::deserialize(char* data)
     return DataEntry(*record, key, true);
 }
 
-const int32_t DataEntry::Size()
+const size_t DataEntry::Size()
 {
     return sizeof(uint64_t) + Record::Size();
 }

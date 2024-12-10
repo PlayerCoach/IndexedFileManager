@@ -70,7 +70,7 @@ class IndexManager
 
 
     /* DELETE LOGIC */
-    std::string deleteKeyPreparation(uint64_t key);
+    std::optional<uint32_t> deleteKeyPreparation(uint64_t key);
     void deleteKey(Node& node, uint64_t key);
         bool handleMaxElementFromLeftSubtree(Node& node, uint64_t key);
         bool handleMinElementFromRightSubtree(Node& node, uint64_t key);

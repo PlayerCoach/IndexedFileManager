@@ -71,9 +71,9 @@ const int32_t Record::getSize() const
     return static_cast<int32_t>(this->series.size());
 }
 
-const int32_t Record::Size()
+const size_t Record::Size()
 {
-    return static_cast<int32_t>(Record::MAX_RECORD_COUNT * sizeof(int32_t) + sizeof(int32_t)); // ->Record of const size
+    return static_cast<size_t>(Record::MAX_RECORD_COUNT * sizeof(int32_t) + sizeof(int32_t)); // ->Record of const size
 }
 
 std::ostream &operator<<(std::ostream &os, const Record &record)

@@ -57,7 +57,7 @@ void IndexManager::readNode(Node& node)
    {
     if(entry.getKey().has_value())
     {
-        std::cout << "Key: " << entry.getKey().value() << " | ";
+        std::cout << "Key: " << entry.getKey().value() << "("<<entry.getDataBlockPtr().value() << ") | ";
     }
     if(entry.getChildPtr().has_value())
     {
@@ -473,16 +473,17 @@ void IndexManager::compensateAfterInsertion(Node& node, Node& parentNode, Node& 
 
 /* DELETE LOGIC */
 
-std::string IndexManager::deleteKeyPreparation(uint64_t key)
+std::optional<uint32_t> IndexManager::deleteKeyPreparation(uint64_t key)
 {
     std::pair<std::optional<Node>, bool> nodeAndCheckIfKeyExistsPair = getNodeForKey(key);
     if(!nodeAndCheckIfKeyExistsPair.first.has_value() || !nodeAndCheckIfKeyExistsPair.second)
     {
-        return "Key not found";
+        return std::nullopt;
     }
     Node node = nodeAndCheckIfKeyExistsPair.first.value();
+    uint32_t blockPtr = node.getEntryWithKey(key).value().getDataBlockPtr().value();
     this->deleteKey(node, key);
-    return "Key deleted";
+    return blockPtr;
 }
 
 void IndexManager::deleteKey(Node& node, uint64_t key)

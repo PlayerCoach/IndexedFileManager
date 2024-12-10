@@ -86,7 +86,7 @@ class AddCommand : public Command {
     void addRandomData(int count)
     {
        static uint64_t key = 0;
-       Record record;
+       Record record("random");
        DataEntry dataEntry(record, key);
        key++;
        std::cout  << dataEntry << std::endl;

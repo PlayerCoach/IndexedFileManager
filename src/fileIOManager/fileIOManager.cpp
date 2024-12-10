@@ -49,7 +49,6 @@ bool FileManager::checkIfFileIsEmpty()
 std::unique_ptr<char[]> FileManager::readBlockFromFile(int blockIndex)
 {
     this->ensureFileIsOpen();
-
     std::unique_ptr<char[]> blockData(new char[blockSize]);
     memset(blockData.get(), 0, blockSize);
     fileStream.seekg(blockIndex * blockSize);
@@ -73,6 +72,9 @@ std::unique_ptr<char[]> FileManager::readLastBlock()
 
 void FileManager::writeBlockToFile(int blockIndex, char* blockData)
 {
+    std::unique_ptr<char[]> blockDataCopy(new char[blockSize]);
+    memset(blockDataCopy.get(), 0, blockSize);
+    memcpy(blockDataCopy.get(), blockData, blockSize);
     fileStream.seekp(blockIndex * blockSize);
     fileStream.write(blockData, blockSize);
 }
@@ -80,6 +82,7 @@ void FileManager::writeBlockToFile(int blockIndex, char* blockData)
 
 void FileManager::updateLastBlockData(char* blockData, size_t actualSize)
 {
+    // is this equivalent to flush???
     ensureFileIsOpen();
     if (indexOfLastBlock != 0)
         fileStream.seekp(indexOfLastBlock * blockSize);
@@ -126,11 +129,19 @@ void FileManager::flushLastBlockData()
 
 }
 
+void FileManager::setLastBlockData(char* newLastBlockData, size_t size)
+{
+    memcpy(lastBlockData.get(), newLastBlockData, size);
+    lastBlockDataSize = size;
+    this->lastBlockDataDirty = true;
+}
 
 void FileManager::IncrementIndexOfLastBlock()
 {
     this->indexOfLastBlock++;
 
 }
+
+
 
 

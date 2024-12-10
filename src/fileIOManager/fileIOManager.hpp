@@ -46,6 +46,12 @@ class FileManager
 
     void IncrementIndexOfLastBlock();
     uint32_t getIndexOfLastBlock() { return indexOfLastBlock; }
+    void setLastBlockData(char* newLastBlockData, size_t size);
+
+
+
+
+    
     
 
 

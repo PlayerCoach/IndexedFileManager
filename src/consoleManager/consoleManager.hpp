@@ -14,6 +14,8 @@ class ConsoleManager
     public:
     ConsoleManager();
     void getUserInput();
-    void parseUserInput(const std::string& input);
+    void parseInput(const std::string& input);
+    void readCommandsFromFile(const std::string& fileName);
+    
 
 };

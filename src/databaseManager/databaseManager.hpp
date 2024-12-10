@@ -41,6 +41,9 @@ class DatabaseManager
     void readDataFromDatabase(const int& index);
     std::string  deleteRecordFromDatabase(const uint64_t& key);
     std::vector<DataEntry> deserializeDataBlock(char* data);
+    std::unique_ptr<char[]> serializeDataBlock(std::vector<DataEntry>& dataEntries);
+    void readAllDataFromDatabase();
+
    
 
 };
