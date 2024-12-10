@@ -64,7 +64,7 @@ std::unique_ptr<char[]> FileManager::readLastBlock()
     if (indexOfLastBlock == 0 && checkIfFileIsEmpty())
     {
         std::unique_ptr<char[]> emptyBlock(new char[blockSize]);
-        memset(emptyBlock.get(), 0, blockSize); // check if -1 doesnt cause any problems
+        memset(emptyBlock.get(), 0, blockSize); // check if -1 doesn't cause any problems
         return emptyBlock;
     }
         

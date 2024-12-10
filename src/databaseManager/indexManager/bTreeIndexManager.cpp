@@ -15,23 +15,33 @@ IndexManager::IndexManager(std::string indexFilePath)
     IndexFileManager.closeFileStream();
 }
 
-void IndexManager::insertPreparation(DataEntry DataEntry, uint32_t databaseBlockIndex)
+std::string IndexManager::insertPreparation(DataEntry DataEntry, uint32_t databaseBlockIndex)
 {
     BTreeEntry entry(DataEntry.getKey(), databaseBlockIndex, std::nullopt);
-    this->insertToLeaf(entry);
-
-}
-
-    
-void IndexManager::insertToLeaf(BTreeEntry entry)
-{
     if(entry.getKey().has_value() == false)
     {
         throw std::runtime_error("Key is not set");
     }
 
 
-    Node nodeToInsert = findLeafNodeForKey(entry.getKey().value());
+    std::pair<std::optional<Node>, bool> NodeAndFoundKeyPair = getNodeForKey(entry.getKey().value());
+    if(NodeAndFoundKeyPair.second)
+    {
+        return "Key already exists";
+    }
+    if(!NodeAndFoundKeyPair.first.has_value())
+    {
+        return "Error while searching for place to insert key";
+    }
+
+    this->insertToLeaf(NodeAndFoundKeyPair.first.value(),entry);
+
+}
+
+    
+void IndexManager::insertToLeaf(Node& nodeToInsert, BTreeEntry entry)
+{
+   
     if(nodeToInsert.getIsFull())
     {
         if(!checkIfCanCompensate(nodeToInsert, entry))
@@ -132,44 +142,6 @@ void IndexManager::splitRoot(Node& node, BTreeEntry entry)
     this->writeNodeToFile(rightNode.getBlockIndex(), rightNode);
 }
 
-Node IndexManager::findLeafNodeForKey(uint64_t key)
-{
-    BTreeEntry wrapperForKey(key, std::nullopt, std::nullopt);
-    Node currentNode = rootCache;
-
-    while (!currentNode.getIsLeaf())
-    {
-        const auto& entries = currentNode.getEntries();
-        size_t left = 0;
-        size_t right = entries.size();
-
-        // Perform binary search to find the appropriate child pointer.
-        while (left < right)
-        {
-            size_t mid = left + (right - left) / 2;
-
-            if (wrapperForKey < entries[mid])
-            {
-                right = mid;
-            }
-            else
-            {
-                left = mid + 1;
-            }
-        }
-
-        size_t childIndex = (left == 0) ? 0 : left - 1;
-        const auto& selectedEntry = entries[childIndex];
-
-        if (!selectedEntry.getChildPtr().has_value())
-        {
-            throw std::runtime_error("Node is not leaf, but has no child ptr");
-        }
-
-        currentNode = getNode(selectedEntry.getChildPtr().value());
-    }
-    return currentNode;
-}
 
 Node IndexManager::getNode(uint32_t blockIndex)
 {
@@ -343,7 +315,7 @@ std::optional<Node> IndexManager::getParentNode(const Node& node)
     return std::nullopt;
 }
 
-std::optional<Node> IndexManager::findNodeWithKey(uint64_t key)
+std::pair<std::optional<Node>, bool> IndexManager::getNodeForKey(uint64_t key)
 {
     BTreeEntry wrapperForKey = BTreeEntry(key, std::nullopt, std::nullopt);
     Node currentNode = rootCache;
@@ -361,7 +333,7 @@ std::optional<Node> IndexManager::findNodeWithKey(uint64_t key)
 
             if(wrapperForKey == entries[mid])
             {
-                return currentNode;
+                return std::make_pair(currentNode, true);
             }
             else if(wrapperForKey < entries[mid])
             {
@@ -378,24 +350,26 @@ std::optional<Node> IndexManager::findNodeWithKey(uint64_t key)
 
         if (!selectedEntry.getChildPtr().has_value())
         {
-            return std::nullopt;
+            return std::make_pair(std::nullopt, false);
         }
 
         currentNode = getNode(selectedEntry.getChildPtr().value());
 
     } 
 
+    return std::make_pair(currentNode, false);
+
 }
 
 
 std::string IndexManager::deleteKeyPreparation(uint64_t key)
 {
-    std::optional<Node> nodeWithKey = findNodeWithKey(key);
-    if(!nodeWithKey.has_value())
+    std::pair<std::optional<Node>, bool> nodeAndCheckIfKeyExistsPair = getNodeForKey(key);
+    if(!nodeAndCheckIfKeyExistsPair.first.has_value() || !nodeAndCheckIfKeyExistsPair.second)
     {
         return "Key not found";
     }
-    Node node = nodeWithKey.value();
+    Node node = nodeAndCheckIfKeyExistsPair.first.value();
     this->deleteKey(node, key);
     return "Key deleted";
 }
@@ -417,7 +391,6 @@ void IndexManager::deleteKey(Node& node, uint64_t key)
         if(handleMinElementFromRightSubtree(node, key))
             return;
     }
-    
     
     throw std::runtime_error("Key not found");
 }
