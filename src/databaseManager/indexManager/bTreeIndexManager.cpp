@@ -364,9 +364,7 @@ void IndexManager::insertToNode(Node& node, BTreeEntry entry)
     {
         rootCache = node;
     }
-    IndexFileManager.openFileStream();
-    IndexFileManager.writeBlockToFile(node.getBlockIndex(), node.serialize().get());
-    IndexFileManager.closeFileStream();
+    this->writeNodeToFile(node.getBlockIndex(), node);
     
 }
 
@@ -393,10 +391,8 @@ void IndexManager::split(Node& node, BTreeEntry entry)
     ascendedEntry.setChildPtr(rightNode.getBlockIndex());
 
     node.setEntries(splitEntries.first);
-    IndexFileManager.openFileStream();
-    IndexFileManager.writeBlockToFile(node.getBlockIndex(), node.serialize().get());
-    IndexFileManager.writeBlockToFile(rightNode.getBlockIndex(), rightNode.serialize().get());
-    IndexFileManager.closeFileStream();
+    this->writeNodeToFile(node.getBlockIndex(), node);
+    this->writeNodeToFile(rightNode.getBlockIndex(), rightNode);
 
     this->insertToNode(parentNode, ascendedEntry);
 
@@ -518,9 +514,7 @@ bool IndexManager::handleMaxElementFromLeftSubtree(Node& node, uint64_t key)
         node.deleteEntryWithKey(key);
         maxEntry.setChildPtr(entryToDelete.getChildPtr());
         node.insertEntry(maxEntry);
-        IndexFileManager.openFileStream();
-        IndexFileManager.writeBlockToFile(node.getBlockIndex(), node.serialize().get());
-        IndexFileManager.closeFileStream();
+        this->writeNodeToFile(node.getBlockIndex(), node);
         if(node.getBlockIndex() == 0)
         {
             rootCache = node;
@@ -541,9 +535,7 @@ bool IndexManager::handleMinElementFromRightSubtree(Node& node, uint64_t key)
         node.deleteEntryWithKey(key);
         minEntry.setChildPtr(entryToDelete.getChildPtr());
         node.insertEntry(minEntry);
-        IndexFileManager.openFileStream();
-        IndexFileManager.writeBlockToFile(node.getBlockIndex(), node.serialize().get());
-        IndexFileManager.closeFileStream();
+        this->writeNodeToFile(node.getBlockIndex(), node);
         if(node.getBlockIndex() == 0)
         {
             rootCache = node;
@@ -596,9 +588,7 @@ void IndexManager::handleKeyRemoval(Node& node, uint64_t key)
     if(node.getBlockIndex() == 0 )
     {
         node.deleteEntryWithKey(key);
-        IndexFileManager.openFileStream();
-        IndexFileManager.writeBlockToFile(node.getBlockIndex(), node.serialize().get());
-        IndexFileManager.closeFileStream();
+        this->writeNodeToFile(node.getBlockIndex(), node);
         rootCache = node;
         return;
 
@@ -607,9 +597,7 @@ void IndexManager::handleKeyRemoval(Node& node, uint64_t key)
     if(node.getNumberOfKeys() > treeOrder)
     {
         node.deleteEntryWithKey(key);
-        IndexFileManager.openFileStream();
-        IndexFileManager.writeBlockToFile(node.getBlockIndex(), node.serialize().get());
-        IndexFileManager.closeFileStream();
+        this->writeNodeToFile(node.getBlockIndex(), node);
         return;
     }
     else
@@ -737,9 +725,7 @@ void IndexManager::updateTreeAfterMerge(Node& target, Node& parentNode, BTreeEnt
     if(parentNode.getBlockIndex() == 0 && parentNode.getNumberOfKeys() == 1)
     {
         target.setSelfPtr(0);
-        IndexFileManager.openFileStream();
-        IndexFileManager.writeBlockToFile(0, target.serialize().get()); // root is now leaf
-        IndexFileManager.closeFileStream();
+        this->writeNodeToFile(0, target);
         rootCache = target;
         this->treeHeight--;
         return;
@@ -749,10 +735,8 @@ void IndexManager::updateTreeAfterMerge(Node& target, Node& parentNode, BTreeEnt
     {
         parentNode.deleteEntryWithKey(entryToDescend.getKey().value());
         rootCache = parentNode;
-        IndexFileManager.openFileStream();
-        IndexFileManager.writeBlockToFile(target.getBlockIndex(), target.serialize().get());
-        IndexFileManager.writeBlockToFile(parentNode.getBlockIndex(), parentNode.serialize().get());
-        IndexFileManager.closeFileStream();
+        this->writeNodeToFile(target.getBlockIndex(), target);
+        this->writeNodeToFile(parentNode.getBlockIndex(), parentNode);
         return;
     }
 

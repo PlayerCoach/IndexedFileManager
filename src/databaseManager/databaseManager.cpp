@@ -50,9 +50,12 @@ std::string DatabaseManager::writeDataToDatabase(DataEntry& dataEntry)
     databaseFileManager.closeFileStream();
     std::string status;
     status = indexManager->insertPreparation(dataEntry, databaseFileManager.getIndexOfLastBlock()); 
-    indexManager->readBTree();
 
-    return status;
+    if(status != "")
+    {
+        return status;
+    }
+    return "Data written to database";
 
 }
 
@@ -86,12 +89,7 @@ std::string DatabaseManager::deleteRecordFromDatabase(const uint64_t& key)
     }
     this->databaseFileManager.closeFileStream();
   
-
-
-    this->indexManager->readBTree();
-    std::cout << std::endl << " ______________DATABASE_UPDATED______________" << std::endl;
-    this->readAllDataFromDatabase();
-    return "";
+    return "Record deleted";
 }
 
 std::string DatabaseManager::searchForDataInDatabase(const uint64_t& key)
@@ -115,6 +113,36 @@ std::string DatabaseManager::searchForDataInDatabase(const uint64_t& key)
         std::cout << *it << std::endl;
     }
     return "";
+}
+
+std::string DatabaseManager::updateRecordInDatabase(const uint64_t& key, const Record& record)
+{
+    this->databaseFileManager.openFileStream();
+    this->databaseFileManager.flushLastBlockData();
+    this->databaseFileManager.closeFileStream();
+    std::optional<uint32_t> blockPtr = this->indexManager->search(key);
+    if(!blockPtr.has_value())
+    {
+        return "Key not found";
+    }
+    this->databaseFileManager.openFileStream();
+    std::unique_ptr<char[]> blockData = this->databaseFileManager.readBlockFromFile(blockPtr.value());
+    this->databaseFileManager.closeFileStream();
+    std::vector<DataEntry> dataEntries = this->deserializeDataBlock(blockData.get());
+    auto it = std::find_if(dataEntries.begin(), dataEntries.end(), [key](DataEntry& dataEntry) { return dataEntry.getKey() == key; });
+    if (it != dataEntries.end())
+    {
+        DataEntry updatedDataEntry = DataEntry(record, key);
+        *it = updatedDataEntry;
+    }
+    this->databaseFileManager.openFileStream();
+    this->databaseFileManager.writeBlockToFile(blockPtr.value(), this->serializeDataBlock(dataEntries).get());
+    if(blockPtr.value() == 0)
+    {
+        this->databaseFileManager.setLastBlockData(this->serializeDataBlock(dataEntries).get(), dataEntries.size() * DataEntry::Size());
+    }
+    this->databaseFileManager.closeFileStream();
+    return "Record updated";
 }
 
 void DatabaseManager::readDataFromDatabase(const int& index)
@@ -164,8 +192,12 @@ std::unique_ptr<char[]> DatabaseManager::serializeDataBlock(std::vector<DataEntr
 
 void DatabaseManager::readAllDataFromDatabase()
 {
+    this->databaseFileManager.openFileStream();
+    this->databaseFileManager.flushLastBlockData();
+    this->databaseFileManager.closeFileStream();
+
     int numberOfBlocks = databaseFileManager.getIndexOfLastBlock();
-    for (int i = 0; i < numberOfBlocks; i++)
+    for (int i = 0; i <= numberOfBlocks; i++)
     {
         readDataFromDatabase(i);
     }
@@ -175,3 +207,4 @@ void DatabaseManager::readBTree()
 {
     this->indexManager->readBTree();
 }
+

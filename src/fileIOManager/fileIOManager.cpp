@@ -131,6 +131,7 @@ void FileManager::flushLastBlockData()
 
 void FileManager::setLastBlockData(char* newLastBlockData, size_t size)
 {
+    memset(lastBlockData.get(), 0, blockSize);
     memcpy(lastBlockData.get(), newLastBlockData, size);
     lastBlockDataSize = size;
     this->lastBlockDataDirty = true;

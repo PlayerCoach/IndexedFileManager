@@ -114,6 +114,7 @@ class AddCommand : public Command {
               {
                   std::cout << result << std::endl;
               }
+                
        }
        
     }

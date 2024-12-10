@@ -24,7 +24,7 @@ class DatabaseManager
     std::string databaseFilePath;
     std::string indexFilePath;
 
-    const int databasePageSize = 2 * 72;
+    const int databasePageSize = 5 * 72;
     std::unique_ptr<char[]> lastBlockBuffer; // Buffer for the last block size of disk page 
     bool isLastBlockInBuffer = false;
 
@@ -40,6 +40,7 @@ class DatabaseManager
     std::string writeDataToDatabase(DataEntry& dataEntry);
     std::string deleteRecordFromDatabase(const uint64_t& key);
     std::string searchForDataInDatabase(const uint64_t& key);
+    std::string updateRecordInDatabase(const uint64_t& key, const Record& record);
     void readDataFromDatabase(const int& index);
     std::vector<DataEntry> deserializeDataBlock(char* data);
     std::unique_ptr<char[]> serializeDataBlock(std::vector<DataEntry>& dataEntries);
