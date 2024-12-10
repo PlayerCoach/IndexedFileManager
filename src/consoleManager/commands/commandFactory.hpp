@@ -6,6 +6,7 @@
 #include "addCommand.hpp"
 #include "deleteCommand.hpp"
 #include "searchCommand.hpp"
+#include "printCommand.hpp"
 #include "commands.hpp"
 #include <unordered_map>
 #include <functional>
@@ -26,6 +27,7 @@ class CommandFactory
             commandMap[Commands::ADD] = []() { return std::make_unique<AddCommand>(); };
             commandMap[Commands::DELETE] = []() { return std::make_unique<DeleteCommand>(); };
             commandMap[Commands::SEARCH] = []() { return std::make_unique<SearchCommand>(); };
+            commandMap[Commands::SHOW] = []() { return std::make_unique<PrintCommand>(); };
         }
 
         std::unique_ptr<Command> createCommand(const std::string& commandName) {

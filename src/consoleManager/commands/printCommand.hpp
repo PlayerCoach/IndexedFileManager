@@ -5,22 +5,26 @@
 #include "databaseManager.hpp"
 
 
-class QuitCommand : public Command 
+class PrintCommand : public Command 
 {
     private:
 
     DatabaseManager& databaseManager = DatabaseManager::getInstance();
+    const std::string DATABASE_FLAG = "-d";
+    const std::string BTREE_FLAG = "-b";
 
     std::string getDescription() override {
-        return "Exits the program";
+        return "Prints the bTree structure or the database";
     } 
     
-
     public:
 
-    QuitCommand() {
+    PrintCommand() {
         this->flags = {
             {Commands::HELP_FLAG, false},
+            {DATABASE_FLAG, false},
+            {BTREE_FLAG, false},
+
         };
     }
 
@@ -33,8 +37,14 @@ class QuitCommand : public Command
             return;
         }
 
-        databaseManager.deleteDatabase();
-        exit(0);
+        if (this->flags[DATABASE_FLAG])
+            databaseManager.readAllDataFromDatabase();
+        
+        else if (this->flags[BTREE_FLAG])
+            databaseManager.readBTree();
+
+        else
+            std::cout << "Error, no flag provided" << std::endl;
     }
     
    

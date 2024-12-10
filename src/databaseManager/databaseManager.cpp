@@ -36,9 +36,9 @@ void DatabaseManager::createDatabase()
     }
 }
 
-void DatabaseManager::deleteDatabase(const std::string& databaseName)
+void DatabaseManager::deleteDatabase()
 {
-    std::filesystem::remove_all(databaseName);
+    std::filesystem::remove_all(this->databaseFolder);
 }
 
 
@@ -169,4 +169,9 @@ void DatabaseManager::readAllDataFromDatabase()
     {
         readDataFromDatabase(i);
     }
+}
+
+void DatabaseManager::readBTree()
+{
+    this->indexManager->readBTree();
 }

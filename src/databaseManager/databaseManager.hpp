@@ -35,7 +35,7 @@ class DatabaseManager
     DatabaseManager& operator=(const DatabaseManager&) = delete;
 
     public:
-    void deleteDatabase(const std::string& databaseName);
+    void deleteDatabase();
 
     std::string writeDataToDatabase(DataEntry& dataEntry);
     std::string deleteRecordFromDatabase(const uint64_t& key);
@@ -44,6 +44,7 @@ class DatabaseManager
     std::vector<DataEntry> deserializeDataBlock(char* data);
     std::unique_ptr<char[]> serializeDataBlock(std::vector<DataEntry>& dataEntries);
     void readAllDataFromDatabase();
+    void readBTree();
 
 
    

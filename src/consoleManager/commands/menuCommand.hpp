@@ -17,6 +17,10 @@ private:
         "3.) " + Commands::CLEAR + "\n"
         "4.) " + Commands::SHOW + "\n"
         "5.) " + Commands::QUIT + "\n"
+        "6.) " + Commands::SEARCH + "\n"
+        "7.) " + Commands::DELETE + "\n"
+        "8.) " + Commands::UPDATE + "\n"
+        "9.) " + "read -> reads commands from a file\n"
         "To check the flags of a command, type the command name followed by " + Commands::HELP_FLAG + "\n"
         
         "\n========================================\n";
