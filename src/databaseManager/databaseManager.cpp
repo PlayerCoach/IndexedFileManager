@@ -43,7 +43,7 @@ void DatabaseManager::deleteDatabase(const std::string& databaseName)
 
 
 
-void DatabaseManager::writeDataToDatabase(DataEntry& dataEntry)
+std::string DatabaseManager::writeDataToDatabase(DataEntry& dataEntry)
 {
     databaseFileManager.openFileStream();
     databaseFileManager.insertDataEntryToLastBlockData(dataEntry.serialize().get());
@@ -52,23 +52,8 @@ void DatabaseManager::writeDataToDatabase(DataEntry& dataEntry)
     status = indexManager->insertPreparation(dataEntry, databaseFileManager.getIndexOfLastBlock()); 
     indexManager->readBTree();
 
-}
+    return status;
 
-void DatabaseManager::readDataFromDatabase(const int& index)
-{
-    databaseFileManager.openFileStream();
-    std::unique_ptr<char[]> blockData = this->databaseFileManager.readBlockFromFile(index);
-    databaseFileManager.closeFileStream();
-    std::vector<DataEntry> dataEntries = this->deserializeDataBlock(blockData.get());
-    if(dataEntries.empty())
-    {
-        std::cout << "No data in this block" << std::endl;
-        return;
-    }
-    for (auto& dataEntry : dataEntries)
-    {
-        std::cout << dataEntry << std::endl;
-    }
 }
 
 std::string DatabaseManager::deleteRecordFromDatabase(const uint64_t& key)
@@ -107,6 +92,46 @@ std::string DatabaseManager::deleteRecordFromDatabase(const uint64_t& key)
     std::cout << std::endl << " ______________DATABASE_UPDATED______________" << std::endl;
     this->readAllDataFromDatabase();
     return "";
+}
+
+std::string DatabaseManager::searchForDataInDatabase(const uint64_t& key)
+{
+    this->databaseFileManager.openFileStream();
+    this->databaseFileManager.flushLastBlockData();
+    this->databaseFileManager.closeFileStream();
+    
+    std::optional<uint32_t> blockPtr = this->indexManager->search(key);
+    if(!blockPtr.has_value())
+    {
+        return "Key not found";
+    }
+    this->databaseFileManager.openFileStream();
+    std::unique_ptr<char[]> blockData = this->databaseFileManager.readBlockFromFile(blockPtr.value());
+    this->databaseFileManager.closeFileStream();
+    std::vector<DataEntry> dataEntries = this->deserializeDataBlock(blockData.get());
+    auto it = std::find_if(dataEntries.begin(), dataEntries.end(), [key](DataEntry& dataEntry) { return dataEntry.getKey() == key; });
+    if (it != dataEntries.end())
+    {
+        std::cout << *it << std::endl;
+    }
+    return "";
+}
+
+void DatabaseManager::readDataFromDatabase(const int& index)
+{
+    databaseFileManager.openFileStream();
+    std::unique_ptr<char[]> blockData = this->databaseFileManager.readBlockFromFile(index);
+    databaseFileManager.closeFileStream();
+    std::vector<DataEntry> dataEntries = this->deserializeDataBlock(blockData.get());
+    if(dataEntries.empty())
+    {
+        std::cout << "No data in this block" << std::endl;
+        return;
+    }
+    for (auto& dataEntry : dataEntries)
+    {
+        std::cout << dataEntry << std::endl;
+    }
 }
 
 

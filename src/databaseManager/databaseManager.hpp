@@ -37,12 +37,14 @@ class DatabaseManager
     public:
     void deleteDatabase(const std::string& databaseName);
 
-    void writeDataToDatabase(DataEntry& dataEntry);
+    std::string writeDataToDatabase(DataEntry& dataEntry);
+    std::string deleteRecordFromDatabase(const uint64_t& key);
+    std::string searchForDataInDatabase(const uint64_t& key);
     void readDataFromDatabase(const int& index);
-    std::string  deleteRecordFromDatabase(const uint64_t& key);
     std::vector<DataEntry> deserializeDataBlock(char* data);
     std::unique_ptr<char[]> serializeDataBlock(std::vector<DataEntry>& dataEntries);
     void readAllDataFromDatabase();
+
 
    
 
