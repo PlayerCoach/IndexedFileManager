@@ -23,6 +23,10 @@ class IndexManager
     uint32_t writeBlockIndex = 0;
     std::vector<uint32_t> freeBlocks;
 
+    int treeHeight = 0;
+    size_t cacheSize = treeHeight + 1;
+    std::unordered_map<uint32_t, Node> cache;
+
     public:
     IndexManager() = default;
     IndexManager(std::string indexFilePath);
@@ -38,7 +42,6 @@ class IndexManager
     void splitRoot(Node& node, BTreeEntry entry);
     bool checkIfCanCompensate(Node& node, BTreeEntry entry);
     std::pair<std::optional<Node>,std::optional<Node>> findSiblings(const Node& parentNode, uint32_t blockIndex);
-    void compensate(Node& node, Node& parentNode, Node& siblingNode, BTreeEntry entry,  bool isLeftSibling);
     void readNode(Node& node);
     std::optional<Node> getParentNode(const Node& node);
 
@@ -50,6 +53,24 @@ class IndexManager
         std::pair<std::optional<BTreeEntry>, std::optional<Node>> findMaxElementFromLeftSubtree(Node& node);
         std::pair<std::optional<BTreeEntry>, std::optional<Node>> findMinElementFromRightSubtree(Node& node);
     bool checkIfCanCompensateAfterDeletion(Node& node, uint64_t key);
-    void compensateAfterDeletion(Node& node, Node& parentNode, Node& siblingNode, uint64_t key,  bool isLeftSibling);
+
     void merge(Node& node, uint64_t key);
+        void mergeWithLeftSibling(Node& node, Node& parentNode, uint64_t key, size_t index);
+        void mergeWithRightSibling(Node& node, Node& parentNode, uint64_t key, size_t index);
+        void updateTreeAfterMerge(Node& target, Node& parentNode, BTreeEntry& entryToDescend);
+    
+    size_t findChildIndex(const Node& node, uint32_t childBlockIndex);
+
+
+    void compensateHelper(Node& node, Node& parentNode, Node& siblingNode,
+        std::optional<BTreeEntry> entry, uint64_t key, bool hasLeftSibling, bool isDeletion);
+
+    void compensateAfterDeletion(Node& node, Node& parentNode, Node& siblingNode,
+        uint64_t key, bool hasLeftSibling);
+
+    void compensateAfterInsertion(Node& node, Node& parentNode, Node& siblingNode,
+        BTreeEntry entry, bool hasLeftSibling);
+
+    void writeNodeToFile(uint32_t blockIndex, Node& node);
+    
 };
