@@ -11,6 +11,7 @@
 #include <optional>
 #include "bTreeEntry.hpp"
 #include <queue>
+#include <list>
 
 class IndexManager 
 {
@@ -25,9 +26,13 @@ class IndexManager
 
     int treeHeight = 0;
     size_t cacheSize = treeHeight + 1;
-    std::unordered_map<uint32_t, Node> cache;
+    std::unordered_map<uint32_t, std::list<std::pair<uint32_t, Node>>::iterator> cacheMap;
+    std::list<std::pair<uint32_t, Node>> cacheList;
     int cacheHits = 0;
     int cacheMisses = 0;
+
+    int readNumber = 0;
+    int writeNumber = 0;
 
     public:
 
@@ -59,7 +64,7 @@ class IndexManager
     void insertToNode(Node& node, BTreeEntry entry);
     void split(Node& node, BTreeEntry entry);
     void splitRoot(Node& node, BTreeEntry entry);
-    bool checkIfCanCompensate(Node& node, BTreeEntry entry);
+    bool checkIfCanCompensateAfterInsertion(Node& node, BTreeEntry entry);
     void compensateAfterInsertion(Node& node, Node& parentNode, Node& siblingNode,
         BTreeEntry entry, bool hasLeftSibling);
 
@@ -86,6 +91,8 @@ class IndexManager
     std::string updateKeyBlockPtr(uint64_t key, uint32_t newBlockPtr);
 
     /* CACHE LOGIC */
+    void updateCache(Node& node);
+    std::optional<Node> getFromCache(uint32_t blockIndex);
    
    
 

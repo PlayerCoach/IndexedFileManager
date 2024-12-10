@@ -48,7 +48,8 @@ void DatabaseManager::writeDataToDatabase(DataEntry& dataEntry)
     databaseFileManager.openFileStream();
     databaseFileManager.insertDataEntryToLastBlockData(dataEntry.serialize().get());
     databaseFileManager.closeFileStream();
-    indexManager->insertPreparation(dataEntry, databaseFileManager.getIndexOfLastBlock()); 
+    std::string status;
+    status = indexManager->insertPreparation(dataEntry, databaseFileManager.getIndexOfLastBlock()); 
     indexManager->readBTree();
 
 }
